@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SNAP IT! — The Elevate</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg:       #0f172a;
+      --card:     #1e293b;
+      --border:   #334155;
+      --accent:   #6366f1;
+      --accent2:  #818cf8;
+      --success:  #22c55e;
+      --danger:   #ef4444;
+      --gold:     #f59e0b;
+      --text:     #f1f5f9;
+      --muted:    #94a3b8;
+      --radius:   20px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 430px;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── SCREENS ── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      padding: 24px 20px 36px;
+      animation: fadeIn .25s ease;
+    }
+    .screen.active { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── BRAND HEADER ── */
+    .brand {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .brand-tag {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--accent2);
+      text-transform: uppercase;
+    }
+    .brand-title {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      margin-top: 12px;
+      letter-spacing: .3px;
+    }
+    .btn:active { opacity: .8; transform: scale(.98); }
+    .btn-primary  { background: var(--accent);  color: #fff; }
+    .btn-success  { background: var(--success);  color: #fff; }
+    .btn-outline  { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+    /* ── SCORE BAR ── */
+    .score-bar {
+      display: flex;
+      justify-content: space-around;
+      background: #0a1628;
+      border-radius: 14px;
+      padding: 14px 10px;
+    }
+    .score-cell { text-align: center; }
+    .score-label { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .score-val   { font-size: 24px; font-weight: 800; }
+
+    /* ══════════════════════════════
+       SCREEN 1 — START
+    ══════════════════════════════ */
+    #s-start {
+      justify-content: center;
+      gap: 20px;
+    }
+    .start-hero { text-align: center; padding: 12px 0; }
+    .start-icon { font-size: 72px; margin-bottom: 12px; }
+    .start-game-title { font-size: 40px; font-weight: 900; letter-spacing: -1px; }
+    .start-sub { color: var(--muted); font-size: 14px; margin-top: 6px; line-height: 1.6; }
+
+    /* ══════════════════════════════
+       SCREEN 2 — CHALLENGE
+    ══════════════════════════════ */
+    #s-challenge { justify-content: center; gap: 20px; }
+    .challenge-round { font-size: 11px; font-weight: 700; letter-spacing: 3px; color: var(--accent2); text-align: center; text-transform: uppercase; }
+    .challenge-emoji { font-size: 96px; text-align: center; line-height: 1.1; margin: 8px 0; }
+    .challenge-label { color: var(--muted); font-size: 13px; text-align: center; }
+    .challenge-name  { font-size: 36px; font-weight: 800; text-align: center; margin-top: 4px; }
+    .challenge-hint  {
+      background: #0a1628;
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* ══════════════════════════════
+       SCREEN 3 — CAMERA
+    ══════════════════════════════ */
+    #s-camera {
+      padding: 0;
+      position: relative;
+      background: #000;
+    }
+    #video {
+      width: 100%;
+      height: 100dvh;
+      object-fit: cover;
+      display: block;
+    }
+    .cam-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
+    }
+    .cam-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cam-badge {
+      background: rgba(0,0,0,.6);
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      backdrop-filter: blur(8px);
+    }
+    .cam-close {
+      background: rgba(0,0,0,.6);
+      border: none;
+      color: #fff;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cam-frame {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 72%; aspect-ratio: 1;
+      border: 2px solid rgba(99,102,241,.6);
+      border-radius: 16px;
+      pointer-events: none;
+    }
+    .cam-frame::before, .cam-frame::after,
+    .cam-frame > span::before, .cam-frame > span::after {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      border-color: var(--accent);
+      border-style: solid;
+    }
+    .cam-frame::before    { top: -2px;  left: -2px;  border-width: 3px 0 0 3px; border-radius: 6px 0 0 0; }
+    .cam-frame::after     { top: -2px;  right: -2px; border-width: 3px 3px 0 0; border-radius: 0 6px 0 0; }
+    .cam-frame > span::before { bottom: -2px; left: -2px;  border-width: 0 0 3px 3px; border-radius: 0 0 0 6px; }
+    .cam-frame > span::after  { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
+
+    .cam-bottom { display: flex; justify-content: center; padding-bottom: 12px; }
+    .shutter {
+      width: 76px; height: 76px;
+      border-radius: 50%;
+      background: #fff;
+      border: 5px solid rgba(255,255,255,.4);
+      cursor: pointer;
+      transition: transform .1s;
+      box-shadow: 0 0 0 4px rgba(255,255,255,.2);
+    }
+    .shutter:active { transform: scale(.92); }
+
+    #canvas { display: none; }
+
+    /* ══════════════════════════════
+       SCREEN 4 — PREVIEW
+    ══════════════════════════════ */
+    #s-preview { justify-content: center; gap: 16px; }
+    #preview-img {
+      width: 100%;
+      border-radius: 16px;
+      max-height: 320px;
+      object-fit: cover;
+    }
+    .preview-label { color: var(--muted); font-size: 13px; text-align: center; }
+
+    /* ══════════════════════════════
+       SCREEN 5 — RESULT
+    ══════════════════════════════ */
+    #s-result { justify-content: center; gap: 14px; }
+    .result-verdict {
+      text-align: center;
+      padding: 20px 0 8px;
+    }
+    .result-icon { font-size: 72px; margin-bottom: 8px; }
+    .result-badge {
+      display: inline-block;
+      border-radius: 20px;
+      padding: 6px 20px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .result-badge.correct  { background: #14532d; color: var(--success); }
+    .result-badge.wrong    { background: #450a0a; color: var(--danger);  }
+
+    .result-box {
+      background: #0a1628;
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+    .result-box-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
+    .result-box-text  { font-size: 14px; line-height: 1.55; }
+
+    .result-thumb {
+      width: 100%;
+      border-radius: 12px;
+      max-height: 140px;
+      object-fit: cover;
+      opacity: .65;
+    }
+
+    /* ── LOADING ── */
+    #s-loading {
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+    }
+    .loading-icon { font-size: 52px; }
+    .loading-title { font-size: 20px; font-weight: 700; }
+    .loading-sub   { font-size: 14px; color: var(--muted); }
+    .dots { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: bounce 1.2s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { animation-delay: .2s; }
+    .dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce { 0%,100%{opacity:.3;transform:scale(.8)} 50%{opacity:1;transform:scale(1)} }
+
+    /* ── ERROR TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #450a0a;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 500;
+      max-width: 340px;
+      text-align: center;
+      transition: transform .3s ease;
+      z-index: 999;
+      pointer-events: none;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SCREEN 1: START -->
+  <div id="s-start" class="screen active">
+    <div class="brand">
+      <div class="brand-tag">The Elevate</div>
+      <div class="brand-title">Photo Challenge</div>
+    </div>
+    <div class="start-hero">
+      <div class="start-icon">📸</div>
+      <div class="start-game-title">SNAP IT!</div>
+      <div class="start-sub">รับโจทย์ → ถ่ายรูป → ให้ AI ตัดสิน<br>สะสม EXP ให้มากที่สุด!</div>
+    </div>
+    <div id="start-score" style="display:none;" class="score-bar">
+      <div class="score-cell">
+        <div class="score-label">คะแนน</div>
+        <div class="score-val" id="disp-score" style="color:var(--gold)">0</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">รอบ</div>
+        <div class="score-val" id="disp-round">0</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">EXP</div>
+        <div class="score-val" id="disp-exp" style="color:var(--accent2)">0</div>
+      </div>
+    </div>
+    <div>
+      <button class="btn btn-primary" onclick="startRound()">เริ่มภารกิจ ⚡</button>
+      <div style="margin-top:16px; color:var(--muted); font-size:12px; text-align:center; line-height:1.6;">
+        ✅ ถูก = +500 EXP &nbsp;|&nbsp; ❌ ผิด = +50 EXP
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: CHALLENGE -->
+  <div id="s-challenge" class="screen">
+    <div class="challenge-round" id="ch-round">ภารกิจที่ 1</div>
+    <div class="challenge-emoji" id="ch-emoji">⚽</div>
+    <div>
+      <div class="challenge-label">ถ่ายรูป</div>
+      <div class="challenge-name" id="ch-name">ลูกฟุตบอล</div>
+    </div>
+    <div class="challenge-hint" id="ch-hint">💡 หาลูกบอลในออฟฟิศหรือถ่ายจากหน้าจอ</div>
+    <div style="flex:1"></div>
+    <div>
+      <button class="btn btn-primary" onclick="openCamera()">📷 เปิดกล้อง</button>
+      <button class="btn btn-outline" onclick="showScreen('s-start')">← กลับหน้าหลัก</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: CAMERA -->
+  <div id="s-camera" class="screen">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="cam-overlay">
+      <div class="cam-top">
+        <div class="cam-badge" id="cam-label">📸 ลูกฟุตบอล</div>
+        <button class="cam-close" onclick="stopCamera(); showScreen('s-challenge')">✕</button>
+      </div>
+      <div class="cam-frame"><span></span></div>
+      <div class="cam-bottom">
+        <button class="shutter" onclick="capturePhoto()"></button>
+      </div>
+    </div>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <!-- SCREEN 4: PREVIEW -->
+  <div id="s-preview" class="screen">
+    <div class="brand" style="margin-bottom:0">
+      <div class="brand-tag">The Elevate</div>
+    </div>
+    <div class="preview-label">ตรวจสอบรูปก่อนส่ง AI</div>
+    <img id="preview-img" src="" alt="preview" />
+    <button class="btn btn-primary" onclick="submitPhoto()">ส่งให้ AI ตัดสิน 🤖</button>
+    <button class="btn btn-outline" onclick="retakePhoto()">ถ่ายใหม่</button>
+  </div>
+
+  <!-- SCREEN: LOADING -->
+  <div id="s-loading" class="screen">
+    <div class="loading-icon">🤖</div>
+    <div class="loading-title">AI กำลังวิเคราะห์...</div>
+    <div class="loading-sub">รอสักครู่นะ</div>
+    <div class="dots">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN 5: RESULT -->
+  <div id="s-result" class="screen">
+    <div class="brand" style="margin-bottom:0">
+      <div class="brand-tag">The Elevate</div>
+    </div>
+    <div class="result-verdict">
+      <div class="result-icon" id="res-icon">✅</div>
+      <div class="result-badge correct" id="res-badge">ถูกต้อง!</div>
+    </div>
+    <div class="result-box">
+      <div class="result-box-label">AI เห็นว่า</div>
+      <div class="result-box-text" id="res-found">—</div>
+    </div>
+    <div class="result-box">
+      <div class="result-box-label">ความคิดเห็น</div>
+      <div class="result-box-text" id="res-feedback">—</div>
+    </div>
+    <img id="res-thumb" src="" alt="thumb" class="result-thumb" />
+    <div class="score-bar">
+      <div class="score-cell">
+        <div class="score-label">คะแนน</div>
+        <div class="score-val" id="res-score" style="color:var(--gold)">0</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">รอบ</div>
+        <div class="score-val" id="res-round">0</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">EXP ได้รับ</div>
+        <div class="score-val" id="res-exp" style="color:var(--accent2)">+500</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="startRound()">ภารกิจต่อไป →</button>
+    <button class="btn btn-outline" onclick="showScreen('s-start')">← หน้าหลัก</button>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+  // ── CHALLENGES ──────────────────────────────────────────
+  const CHALLENGES = [
+    { th: "ลูกฟุตบอล",       en: "football / soccer ball", emoji: "⚽", hint: "💡 หาลูกบอลในออฟฟิศหรือถ่ายจากหน้าจอก็ได้" },
+    { th: "แก้วกาแฟ",        en: "coffee cup or mug",       emoji: "☕", hint: "💡 แก้วกาแฟ แก้วน้ำ หรือแก้วพลาสติกก็ได้" },
+    { th: "ดินสอหรือปากกา",  en: "pencil or pen",           emoji: "✏️", hint: "💡 หาอุปกรณ์เขียนอะไรก็ได้รอบตัว" },
+    { th: "โทรศัพท์มือถือ",  en: "mobile phone",            emoji: "📱", hint: "💡 ถ่ายโทรศัพท์เครื่องอื่น หรือโชว์เคสมือถือ" },
+    { th: "หนังสือหรือสมุด", en: "book or notebook",         emoji: "📖", hint: "💡 หนังสือ สมุด หรือเอกสารที่เย็บเล่ม" },
+    { th: "รองเท้า",         en: "shoes or sneakers",        emoji: "👟", hint: "💡 รองเท้าของตัวเองหรือคนข้างๆ ก็ได้" },
+    { th: "นาฬิกา",          en: "watch or clock",           emoji: "⌚", hint: "💡 นาฬิกาข้อมือ นาฬิกาแขวน หรือนาฬิกาในมือถือ" },
+    { th: "พืชหรือต้นไม้",   en: "plant or flower",          emoji: "🌿", hint: "💡 ต้นไม้ใบไม้ หรือดอกไม้ก็ได้" },
+  ];
+
+  // ── STATE ────────────────────────────────────────────────
+  let state = {
+    score: 0,
+    round: 0,
+    exp: 0,
+    current: null,
+    capturedB64: null,
+    stream: null,
+  };
+
+  // ── SCREEN MANAGER ────────────────────────────────────────
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  // ── TOAST ────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // ── ROUND SETUP ───────────────────────────────────────────
+  function startRound() {
+    // Update start screen score display
+    if (state.round > 0) {
+      document.getElementById('start-score').style.display = 'flex';
+      document.getElementById('disp-score').textContent = state.score;
+      document.getElementById('disp-round').textContent = state.round;
+      document.getElementById('disp-exp').textContent = state.exp;
+    }
+
+    // Pick a random challenge (avoid repeating last one)
+    let pick;
+    do { pick = CHALLENGES[Math.floor(Math.random() * CHALLENGES.length)]; }
+    while (CHALLENGES.length > 1 && pick === state.current);
+    state.current = pick;
+
+    document.getElementById('ch-round').textContent = `ภารกิจที่ ${state.round + 1}`;
+    document.getElementById('ch-emoji').textContent = pick.emoji;
+    document.getElementById('ch-name').textContent  = pick.th;
+    document.getElementById('ch-hint').textContent  = pick.hint;
+    document.getElementById('cam-label').textContent = `${pick.emoji} ${pick.th}`;
+
+    showScreen('s-challenge');
+  }
+
+  // ── CAMERA ────────────────────────────────────────────────
+  async function openCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } },
+        audio: false,
+      });
+      state.stream = stream;
+      const video = document.getElementById('video');
+      video.srcObject = stream;
+      await video.play();
+      showScreen('s-camera');
+    } catch (err) {
+      showToast('ไม่สามารถเปิดกล้องได้ — กรุณาอนุญาตการใช้กล้องในเบราว์เซอร์');
+    }
+  }
+
+  function stopCamera() {
+    if (state.stream) {
+      state.stream.getTracks().forEach(t => t.stop());
+      state.stream = null;
+    }
+  }
+
+  function capturePhoto() {
+    const video  = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    state.capturedB64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+    stopCamera();
+
+    document.getElementById('preview-img').src = 'data:image/jpeg;base64,' + state.capturedB64;
+    showScreen('s-preview');
+  }
+
+  function retakePhoto() {
+    state.capturedB64 = null;
+    openCamera();
+  }
+
+  // ── SUBMIT TO AI ──────────────────────────────────────────
+  async function submitPhoto() {
+    if (!state.capturedB64) return;
+    showScreen('s-loading');
+
+    try {
+      const res = await fetch('/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_base64: state.capturedB64,
+          challenge_en: state.current.en,
+          challenge_th: state.current.th,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.error);
+
+      // Update state
+      state.round++;
+      const gained = data.correct ? 500 : 50;
+      state.exp   += gained;
+      if (data.correct) state.score++;
+
+      // Populate result screen
+      document.getElementById('res-icon').textContent    = data.correct ? '✅' : '❌';
+      const badge = document.getElementById('res-badge');
+      badge.textContent = data.correct ? 'ถูกต้อง! 🎉' : 'ยังไม่ใช่';
+      badge.className   = 'result-badge ' + (data.correct ? 'correct' : 'wrong');
+
+      document.getElementById('res-found').textContent    = data.found    || '—';
+      document.getElementById('res-feedback').textContent = data.feedback || '—';
+      document.getElementById('res-thumb').src = 'data:image/jpeg;base64,' + state.capturedB64;
+
+      document.getElementById('res-score').textContent = state.score;
+      document.getElementById('res-round').textContent = state.round;
+      document.getElementById('res-exp').textContent   = `+${gained}`;
+
+      showScreen('s-result');
+
+    } catch (err) {
+      showToast('เกิดข้อผิดพลาด: ' + err.message + ' — ลองใหม่อีกครั้ง');
+      showScreen('s-preview');
+    }
+  }
+</script>
+</body>
+</html>
