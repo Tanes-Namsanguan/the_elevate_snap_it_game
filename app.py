@@ -17,7 +17,7 @@ app = Flask(__name__)
 
 # ── GEMINI CLIENT SETUP ───────────────────────────────────
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-MODEL = "gemini-2.0-flash-lite"
+MODEL = "gemini-3.5-flash-lite"
 
 if not GEMINI_API_KEY:
     logger.error("❌ GEMINI_API_KEY is not set! Please add it to environment variables.")
