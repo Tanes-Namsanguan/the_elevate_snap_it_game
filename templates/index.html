@@ -107,6 +107,32 @@
     .score-label { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
     .score-val   { font-size: 24px; font-weight: 800; }
 
+    /* ── TIMER ── */
+    .timer-badge {
+      align-self: center;
+      background: rgba(0,0,0,.6);
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      backdrop-filter: blur(8px);
+      color: var(--text);
+      transition: color .2s;
+    }
+    .timer-badge.urgent { color: var(--danger); }
+    .timer-value.urgent { color: var(--danger) !important; }
+
+    .game-over-note {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gold);
+      background: rgba(245,158,11,.1);
+      border: 1px solid rgba(245,158,11,.35);
+      border-radius: 12px;
+      padding: 10px 14px;
+    }
+
     /* ══════════════════════════════
        SCREEN 1 — START
     ══════════════════════════════ */
@@ -123,6 +149,7 @@
        SCREEN 2 — CHALLENGE
     ══════════════════════════════ */
     #s-challenge { justify-content: center; gap: 20px; }
+    .challenge-top-row { display: flex; justify-content: center; align-items: center; gap: 10px; }
     .challenge-round { font-size: 11px; font-weight: 700; letter-spacing: 3px; color: var(--accent2); text-align: center; text-transform: uppercase; }
     .challenge-emoji { font-size: 96px; text-align: center; line-height: 1.1; margin: 8px 0; }
     .challenge-label { color: var(--muted); font-size: 13px; text-align: center; }
@@ -164,6 +191,7 @@
       justify-content: space-between;
       align-items: center;
     }
+    .cam-top-right { display: flex; align-items: center; gap: 8px; }
     .cam-badge {
       background: rgba(0,0,0,.6);
       border-radius: 20px;
@@ -320,33 +348,36 @@
     <div class="start-hero">
       <div class="start-icon">📸</div>
       <div class="start-game-title">SNAP IT!</div>
-      <div class="start-sub">รับโจทย์ → ถ่ายรูป → ให้ AI ตัดสิน<br>สะสม EXP ให้มากที่สุด!</div>
+      <div class="start-sub">รับโจทย์ → ถ่ายรูป → ให้ AI ตัดสิน<br>สะสมแต้มให้มากที่สุดก่อนหมดเวลา!</div>
     </div>
     <div id="start-score" style="display:none;" class="score-bar">
       <div class="score-cell">
-        <div class="score-label">คะแนน</div>
+        <div class="score-label">แต้ม</div>
         <div class="score-val" id="disp-score" style="color:var(--gold)">0</div>
       </div>
       <div class="score-cell">
-        <div class="score-label">รอบ</div>
-        <div class="score-val" id="disp-round">0</div>
+        <div class="score-label">ภาพที่ถ่าย</div>
+        <div class="score-val" id="disp-round">0/3</div>
       </div>
       <div class="score-cell">
-        <div class="score-label">EXP</div>
-        <div class="score-val" id="disp-exp" style="color:var(--accent2)">0</div>
+        <div class="score-label">เวลาที่เหลือ</div>
+        <div class="score-val timer-value" id="disp-time" style="color:var(--accent2)">2:00</div>
       </div>
     </div>
     <div>
       <button class="btn btn-primary" onclick="startRound()">เริ่มภารกิจ ⚡</button>
       <div style="margin-top:16px; color:var(--muted); font-size:12px; text-align:center; line-height:1.6;">
-        ✅ ถูก = +500 EXP &nbsp;|&nbsp; ❌ ผิด = +50 EXP
+        ✅ AI บอกว่าถูก = +1 แต้ม &nbsp;|&nbsp; ⏱ เวลาจำกัด 2 นาที (3 ภาพ)
       </div>
     </div>
   </div>
 
   <!-- SCREEN 2: CHALLENGE -->
   <div id="s-challenge" class="screen">
-    <div class="challenge-round" id="ch-round">ภารกิจที่ 1</div>
+    <div class="challenge-top-row">
+      <div class="challenge-round" id="ch-round">ภารกิจที่ 1/3</div>
+      <div class="timer-badge" id="ch-timer">⏱ 2:00</div>
+    </div>
     <div class="challenge-emoji" id="ch-emoji">⚽</div>
     <div>
       <div class="challenge-label">ถ่ายรูป</div>
@@ -366,7 +397,10 @@
     <div class="cam-overlay">
       <div class="cam-top">
         <div class="cam-badge" id="cam-label">📸 ลูกฟุตบอล</div>
-        <button class="cam-close" onclick="stopCamera(); showScreen('s-challenge')">✕</button>
+        <div class="cam-top-right">
+          <div class="timer-badge" id="cam-timer">⏱ 2:00</div>
+          <button class="cam-close" onclick="stopCamera(); showScreen('s-challenge')">✕</button>
+        </div>
       </div>
       <div class="cam-frame"><span></span></div>
       <div class="cam-bottom">
@@ -382,6 +416,7 @@
       <div class="brand-tag">The Elevate</div>
     </div>
     <div class="preview-label">ตรวจสอบรูปก่อนส่ง AI</div>
+    <div class="timer-badge" id="preview-timer">⏱ 2:00</div>
     <img id="preview-img" src="" alt="preview" />
     <button class="btn btn-primary" onclick="submitPhoto()">ส่งให้ AI ตัดสิน 🤖</button>
     <button class="btn btn-outline" onclick="retakePhoto()">ถ่ายใหม่</button>
@@ -392,6 +427,7 @@
     <div class="loading-icon">🤖</div>
     <div class="loading-title">AI กำลังวิเคราะห์...</div>
     <div class="loading-sub">รอสักครู่นะ</div>
+    <div class="timer-badge" id="loading-timer">⏱ 2:00</div>
     <div class="dots">
       <div class="dot"></div>
       <div class="dot"></div>
@@ -419,19 +455,21 @@
     <img id="res-thumb" src="" alt="thumb" class="result-thumb" />
     <div class="score-bar">
       <div class="score-cell">
-        <div class="score-label">คะแนน</div>
+        <div class="score-label">แต้มสะสม</div>
         <div class="score-val" id="res-score" style="color:var(--gold)">0</div>
       </div>
       <div class="score-cell">
-        <div class="score-label">รอบ</div>
-        <div class="score-val" id="res-round">0</div>
+        <div class="score-label">ภาพที่ถ่าย</div>
+        <div class="score-val" id="res-round">0/3</div>
       </div>
       <div class="score-cell">
-        <div class="score-label">EXP ได้รับ</div>
-        <div class="score-val" id="res-exp" style="color:var(--accent2)">+500</div>
+        <div class="score-label">เวลาที่เหลือ</div>
+        <div class="score-val timer-value" id="res-time" style="color:var(--accent2)">2:00</div>
       </div>
     </div>
-    <button class="btn btn-primary" onclick="startRound()">ภารกิจต่อไป →</button>
+    <div class="game-over-note" id="res-game-over-note" style="display:none;">🏁 จบเกม! นี่คือแต้มสุดท้ายของคุณ</div>
+    <button class="btn btn-primary" id="btn-next-round" onclick="startRound()">ภารกิจต่อไป →</button>
+    <button class="btn btn-success" id="btn-play-again" style="display:none;" onclick="resetGame()">เล่นใหม่ 🔄</button>
     <button class="btn btn-outline" onclick="showScreen('s-start')">← หน้าหลัก</button>
   </div>
 
@@ -453,14 +491,20 @@
     { th: "พืชหรือต้นไม้",   en: "plant or flower",          emoji: "🌿", hint: "💡 ต้นไม้ใบไม้ หรือดอกไม้ก็ได้" },
   ];
 
+  // ── GAME CONFIG ───────────────────────────────────────────
+  const TOTAL_ROUNDS = 3;   // 3 ภาพต่อเกม
+  const TOTAL_TIME   = 120; // 2 นาที (วินาที)
+
   // ── STATE ────────────────────────────────────────────────
   let state = {
-    score: 0,
-    round: 0,
-    exp: 0,
+    score: 0,          // จำนวนแต้มที่สะสมได้ (AI ตัดสินว่าถูก = +1)
+    round: 0,           // จำนวนภาพที่ถ่ายและให้ AI ตัดสินไปแล้ว
     current: null,
     capturedB64: null,
     stream: null,
+    timeLeft: TOTAL_TIME,
+    timerInterval: null,
+    gameEnded: false,
   };
 
   // ── SCREEN MANAGER ────────────────────────────────────────
@@ -478,14 +522,114 @@
     setTimeout(() => t.classList.remove('show'), 3500);
   }
 
+  // ── TIMER ────────────────────────────────────────────────
+  function formatTime(sec) {
+    const s = Math.max(sec, 0);
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${r.toString().padStart(2, '0')}`;
+  }
+
+  function updateTimerDisplay() {
+    const label = formatTime(state.timeLeft);
+    const urgent = state.timeLeft <= 10;
+    document.querySelectorAll('.timer-badge').forEach(el => {
+      el.textContent = `⏱ ${label}`;
+      el.classList.toggle('urgent', urgent);
+    });
+    document.querySelectorAll('.timer-value').forEach(el => {
+      el.textContent = label;
+      el.classList.toggle('urgent', urgent);
+    });
+  }
+
+  function startTimer() {
+    clearInterval(state.timerInterval);
+    state.timeLeft = TOTAL_TIME;
+    updateTimerDisplay();
+    state.timerInterval = setInterval(() => {
+      state.timeLeft--;
+      updateTimerDisplay();
+      if (state.timeLeft <= 0) {
+        clearInterval(state.timerInterval);
+        handleTimeout();
+      }
+    }, 1000);
+  }
+
+  // ── GAME OVER HANDLING ───────────────────────────────────
+  function finishGame() {
+    if (state.gameEnded) return;
+    state.gameEnded = true;
+    clearInterval(state.timerInterval);
+    stopCamera();
+    document.getElementById('btn-next-round').style.display = 'none';
+    document.getElementById('btn-play-again').style.display = 'block';
+    document.getElementById('res-game-over-note').style.display = 'block';
+  }
+
+  function handleTimeout() {
+    if (state.gameEnded) return;
+    finishGame();
+
+    document.getElementById('res-icon').textContent = '⏰';
+    const badge = document.getElementById('res-badge');
+    badge.textContent = 'หมดเวลา!';
+    badge.className   = 'result-badge wrong';
+
+    document.getElementById('res-found').textContent    = `ถ่ายไปได้ ${state.round}/${TOTAL_ROUNDS} ภาพ`;
+    document.getElementById('res-feedback').textContent = state.score > 0
+      ? `เก่งมาก! สะสมแต้มได้ ${state.score} แต้ม 🎯`
+      : `หมดเวลาแล้ว ลองใหม่อีกครั้งนะ 💪`;
+
+    const thumb = document.getElementById('res-thumb');
+    if (state.capturedB64) {
+      thumb.src = 'data:image/jpeg;base64,' + state.capturedB64;
+      thumb.style.display = '';
+    } else {
+      thumb.style.display = 'none';
+    }
+
+    document.getElementById('res-game-over-note').textContent = '⏰ หมดเวลา! นี่คือแต้มสุดท้ายของคุณ';
+    updateResultScoreBar();
+    showScreen('s-result');
+  }
+
+  function updateResultScoreBar() {
+    document.getElementById('res-score').textContent = state.score;
+    document.getElementById('res-round').textContent = `${state.round}/${TOTAL_ROUNDS}`;
+    document.getElementById('res-time').textContent  = formatTime(state.timeLeft);
+  }
+
+  function resetGame() {
+    state.score = 0;
+    state.round = 0;
+    state.current = null;
+    state.capturedB64 = null;
+    state.gameEnded = false;
+    clearInterval(state.timerInterval);
+    state.timeLeft = TOTAL_TIME;
+    updateTimerDisplay();
+
+    document.getElementById('start-score').style.display = 'none';
+    document.getElementById('btn-next-round').style.display = 'block';
+    document.getElementById('btn-play-again').style.display = 'none';
+    document.getElementById('res-game-over-note').style.display = 'none';
+    document.getElementById('res-thumb').style.display = '';
+
+    showScreen('s-start');
+  }
+
   // ── ROUND SETUP ───────────────────────────────────────────
   function startRound() {
+    if (state.gameEnded) resetGame();
+    if (state.round === 0) startTimer();
+
     // Update start screen score display
     if (state.round > 0) {
       document.getElementById('start-score').style.display = 'flex';
       document.getElementById('disp-score').textContent = state.score;
-      document.getElementById('disp-round').textContent = state.round;
-      document.getElementById('disp-exp').textContent = state.exp;
+      document.getElementById('disp-round').textContent = `${state.round}/${TOTAL_ROUNDS}`;
     }
 
     // Pick a random challenge (avoid repeating last one)
@@ -494,7 +638,7 @@
     while (CHALLENGES.length > 1 && pick === state.current);
     state.current = pick;
 
-    document.getElementById('ch-round').textContent = `ภารกิจที่ ${state.round + 1}`;
+    document.getElementById('ch-round').textContent = `ภารกิจที่ ${state.round + 1}/${TOTAL_ROUNDS}`;
     document.getElementById('ch-emoji').textContent = pick.emoji;
     document.getElementById('ch-name').textContent  = pick.th;
     document.getElementById('ch-hint').textContent  = pick.hint;
@@ -505,6 +649,7 @@
 
   // ── CAMERA ────────────────────────────────────────────────
   async function openCamera() {
+    if (state.gameEnded) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } },
@@ -528,6 +673,7 @@
   }
 
   function capturePhoto() {
+    if (state.gameEnded) return;
     const video  = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     canvas.width  = video.videoWidth;
@@ -541,13 +687,14 @@
   }
 
   function retakePhoto() {
+    if (state.gameEnded) return;
     state.capturedB64 = null;
     openCamera();
   }
 
   // ── SUBMIT TO AI ──────────────────────────────────────────
   async function submitPhoto() {
-    if (!state.capturedB64) return;
+    if (!state.capturedB64 || state.gameEnded) return;
     showScreen('s-loading');
 
     try {
@@ -565,11 +712,10 @@
       const data = await res.json();
 
       if (data.error) throw new Error(data.error);
+      if (state.gameEnded) return; // หมดเวลาไปแล้วระหว่างรอ AI ตัดสิน
 
-      // Update state
+      // Update state — AI บอกว่าถูก = +1 แต้ม
       state.round++;
-      const gained = data.correct ? 500 : 50;
-      state.exp   += gained;
       if (data.correct) state.score++;
 
       // Populate result screen
@@ -580,11 +726,16 @@
 
       document.getElementById('res-found').textContent    = data.found    || '—';
       document.getElementById('res-feedback').textContent = data.feedback || '—';
-      document.getElementById('res-thumb').src = 'data:image/jpeg;base64,' + state.capturedB64;
+      const thumb = document.getElementById('res-thumb');
+      thumb.src = 'data:image/jpeg;base64,' + state.capturedB64;
+      thumb.style.display = '';
 
-      document.getElementById('res-score').textContent = state.score;
-      document.getElementById('res-round').textContent = state.round;
-      document.getElementById('res-exp').textContent   = `+${gained}`;
+      updateResultScoreBar();
+
+      if (state.round >= TOTAL_ROUNDS) {
+        finishGame();
+        document.getElementById('res-game-over-note').textContent = '🏁 ครบ 3 ภาพแล้ว! นี่คือแต้มสุดท้ายของคุณ';
+      }
 
       showScreen('s-result');
 
