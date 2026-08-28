@@ -1,12 +1,13 @@
 import os
 import json
-import base64
-import anthropic
+from groq import Groq
 from flask import Flask, request, jsonify, render_template
 
 app = Flask(__name__)
 
-client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+
+MODEL = "llama-3.2-11b-vision-preview"
 
 
 @app.route("/")
@@ -36,31 +37,29 @@ Respond ONLY with a JSON object, no markdown, no extra text:
 }}
 Be fair — if the photo is close enough or partially matches, consider it correct."""
 
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+        response = client.chat.completions.create(
+            model=MODEL,
             max_tokens=300,
             messages=[
                 {
                     "role": "user",
                     "content": [
                         {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": "image/jpeg",
-                                "data": image_b64,
-                            },
-                        },
-                        {
                             "type": "text",
                             "text": prompt,
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_b64}",
+                            },
                         },
                     ],
                 }
             ],
         )
 
-        text = response.content[0].text.strip()
+        text = response.choices[0].message.content.strip()
         text = text.replace("```json", "").replace("```", "").strip()
         result = json.loads(text)
         return jsonify(result)
