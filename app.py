@@ -1,13 +1,14 @@
 import os
 import json
-from groq import Groq
+import base64
+from google import genai
+from google.genai import types
 from flask import Flask, request, jsonify, render_template
 
 app = Flask(__name__)
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-
-MODEL = "llama-3.2-11b-vision-preview"
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+MODEL = "gemini-2.0-flash-lite"
 
 
 @app.route("/")
@@ -37,29 +38,17 @@ Respond ONLY with a JSON object, no markdown, no extra text:
 }}
 Be fair — if the photo is close enough or partially matches, consider it correct."""
 
-        response = client.chat.completions.create(
+        image_bytes = base64.b64decode(image_b64)
+
+        response = client.models.generate_content(
             model=MODEL,
-            max_tokens=300,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": prompt,
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{image_b64}",
-                            },
-                        },
-                    ],
-                }
+            contents=[
+                types.Part.from_text(text=prompt),
+                types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
             ],
         )
 
-        text = response.choices[0].message.content.strip()
+        text = response.text.strip()
         text = text.replace("```json", "").replace("```", "").strip()
         result = json.loads(text)
         return jsonify(result)
