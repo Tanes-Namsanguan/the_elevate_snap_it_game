@@ -30,20 +30,21 @@ GAME_URL = os.environ.get("GAME_URL", "https://the-elevate-snap-it-game.onrender
 MODEL = "gemini-3.5-flash-lite"
 
 
+def _split_keys(raw):
+    """แยกค่าด้วยจุลภาคเสมอ เผื่อมีคนใส่หลายคีย์รวมกันในตัวแปรเดียว ไม่ว่าจะตั้งชื่อ
+    ตัวแปรว่าอะไรก็ตาม (GEMINI_API_KEY หรือ GEMINI_API_KEYS)"""
+    return [k.strip() for k in (raw or "").split(",") if k.strip()]
+
+
 def _load_api_keys():
     keys = []
 
-    multi = os.environ.get("GEMINI_API_KEYS", "")
-    keys.extend([k.strip() for k in multi.split(",") if k.strip()])
+    keys.extend(_split_keys(os.environ.get("GEMINI_API_KEYS")))
 
     for i in range(1, 10):  # GEMINI_API_KEY_1 .. GEMINI_API_KEY_9
-        k = os.environ.get(f"GEMINI_API_KEY_{i}")
-        if k and k.strip():
-            keys.append(k.strip())
+        keys.extend(_split_keys(os.environ.get(f"GEMINI_API_KEY_{i}")))
 
-    single = os.environ.get("GEMINI_API_KEY")
-    if single and single.strip():
-        keys.append(single.strip())
+    keys.extend(_split_keys(os.environ.get("GEMINI_API_KEY")))
 
     # ตัดตัวซ้ำ แต่คงลำดับเดิมไว้
     seen = set()
