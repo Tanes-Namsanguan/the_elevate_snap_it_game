@@ -2,9 +2,11 @@ import os
 import io
 import json
 import base64
+import random
 import logging
 import qrcode
 from google import genai
+from google.genai import errors as genai_errors
 from google.genai import types
 from flask import Flask, request, jsonify, render_template, send_file
 
@@ -20,21 +22,53 @@ app = Flask(__name__)
 # ── QR CODE SETUP ─────────────────────────────────────────
 GAME_URL = os.environ.get("GAME_URL", "https://the-elevate-snap-it-game.onrender.com/")
 
-# ── GEMINI CLIENT SETUP ───────────────────────────────────
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+# ── GEMINI CLIENT SETUP (multi API-key rotation) ──────────
+# ตั้งค่าได้ 2 แบบ (ใช้แบบไหนก็ได้):
+#   1) GEMINI_API_KEYS = "key1,key2,key3"   (คั่นด้วยจุลภาค แนะนำ)
+#   2) GEMINI_API_KEY_1 / GEMINI_API_KEY_2 / GEMINI_API_KEY_3 (แยกตัวแปร)
+# ยังรองรับ GEMINI_API_KEY ตัวเดียวแบบเดิมด้วย (backward compatible)
 MODEL = "gemini-3.5-flash-lite"
 
-if not GEMINI_API_KEY:
-    logger.error("❌ GEMINI_API_KEY is not set! Please add it to environment variables.")
-else:
-    logger.info(f"✅ GEMINI_API_KEY loaded (starts with: {GEMINI_API_KEY[:8]}...)")
 
-try:
-    client = genai.Client(api_key=GEMINI_API_KEY)
-    logger.info(f"✅ Gemini client initialized — model: {MODEL}")
-except Exception as e:
-    logger.error(f"❌ Failed to initialize Gemini client: {e}")
-    client = None
+def _load_api_keys():
+    keys = []
+
+    multi = os.environ.get("GEMINI_API_KEYS", "")
+    keys.extend([k.strip() for k in multi.split(",") if k.strip()])
+
+    for i in range(1, 10):  # GEMINI_API_KEY_1 .. GEMINI_API_KEY_9
+        k = os.environ.get(f"GEMINI_API_KEY_{i}")
+        if k and k.strip():
+            keys.append(k.strip())
+
+    single = os.environ.get("GEMINI_API_KEY")
+    if single and single.strip():
+        keys.append(single.strip())
+
+    # ตัดตัวซ้ำ แต่คงลำดับเดิมไว้
+    seen = set()
+    unique_keys = []
+    for k in keys:
+        if k not in seen:
+            seen.add(k)
+            unique_keys.append(k)
+    return unique_keys
+
+
+GEMINI_API_KEYS = _load_api_keys()
+
+if not GEMINI_API_KEYS:
+    logger.error("❌ No Gemini API key found! Set GEMINI_API_KEYS (comma-separated) or GEMINI_API_KEY.")
+
+clients = []
+for idx, key in enumerate(GEMINI_API_KEYS, start=1):
+    try:
+        clients.append(genai.Client(api_key=key))
+        logger.info(f"✅ Gemini client #{idx} initialized (key starts with: {key[:8]}...)")
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize Gemini client #{idx}: {e}")
+
+logger.info(f"🔑 {len(clients)} Gemini API key(s) loaded — requests will be spread across them, model: {MODEL}")
 
 
 # ── ROUTES ────────────────────────────────────────────────
@@ -48,8 +82,8 @@ def index():
 def health():
     status = {
         "status": "ok",
-        "gemini_key_set": bool(GEMINI_API_KEY),
-        "gemini_client_ready": client is not None,
+        "gemini_keys_configured": len(GEMINI_API_KEYS),
+        "gemini_clients_ready": len(clients),
         "model": MODEL,
     }
     logger.info(f"🏥 Health check: {status}")
@@ -78,13 +112,43 @@ def qrcode_image():
     return send_file(buf, mimetype="image/png", download_name="the-elevate-qr.png")
 
 
+def _generate_with_failover(prompt, image_bytes):
+    """สุ่มลำดับ client (API key) แล้วลองยิงไปเรื่อยๆ — ถ้าคีย์ไหนโดน rate-limit/quota
+    เต็ม (429) หรือ Gemini ล้ม (503) ก็ข้ามไปลองคีย์ถัดไปให้อัตโนมัติ วิธีนี้กระจาย
+    โหลดข้าม process ของ gunicorn ได้โดยไม่ต้องมี shared state (เช่น Redis) และไม่มี
+    downtime ถ้าคีย์ใดคีย์หนึ่งใช้โควต้าฟรีหมดในระหว่างวัน"""
+    order = list(range(len(clients)))
+    random.shuffle(order)
+
+    last_err = None
+    for i in order:
+        try:
+            response = clients[i].models.generate_content(
+                model=MODEL,
+                contents=[
+                    types.Part.from_text(text=prompt),
+                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                ],
+            )
+            logger.info(f"🔑 Used Gemini API key #{i + 1}/{len(clients)}")
+            return response
+        except genai_errors.APIError as e:
+            last_err = e
+            if e.code in (429, 503):  # quota exceeded / overloaded — try next key
+                logger.warning(f"⚠️ Key #{i + 1} failed ({e.code}), trying next key...")
+                continue
+            raise  # other API errors (bad request, auth, etc.) — don't retry
+
+    raise last_err if last_err else RuntimeError("No Gemini API keys available")
+
+
 @app.route("/analyze", methods=["POST"])
 def analyze():
     logger.info("📸 POST /analyze — received request")
     try:
-        if client is None:
-            logger.error("❌ Gemini client not initialized")
-            return jsonify({"error": "Gemini client not initialized — check GEMINI_API_KEY"}), 500
+        if not clients:
+            logger.error("❌ No Gemini client initialized")
+            return jsonify({"error": "Gemini client not initialized — check GEMINI_API_KEY(S)"}), 500
 
         data = request.get_json()
         if not data:
@@ -116,13 +180,7 @@ Be fair — if the photo is close enough or partially matches, consider it corre
         image_bytes = base64.b64decode(image_b64)
         logger.info(f"🔄 Sending to Gemini ({len(image_bytes)} bytes)...")
 
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=[
-                types.Part.from_text(text=prompt),
-                types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-            ],
-        )
+        response = _generate_with_failover(prompt, image_bytes)
 
         text = response.text.strip()
         text = text.replace("```json", "").replace("```", "").strip()
