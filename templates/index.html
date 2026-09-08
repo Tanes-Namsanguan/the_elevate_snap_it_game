@@ -190,6 +190,7 @@
       object-fit: cover;
       display: block;
     }
+    #video.mirrored { transform: scaleX(-1); }
     .cam-overlay {
       position: absolute;
       inset: 0;
@@ -212,7 +213,7 @@
       font-weight: 600;
       backdrop-filter: blur(8px);
     }
-    .cam-close {
+    .cam-close, .cam-switch {
       background: rgba(0,0,0,.6);
       border: none;
       color: #fff;
@@ -223,6 +224,7 @@
       backdrop-filter: blur(8px);
       display: flex; align-items: center; justify-content: center;
     }
+    .cam-switch:active { transform: scale(.9); }
     .cam-frame {
       position: absolute;
       top: 50%; left: 50%;
@@ -451,6 +453,7 @@
         <div class="cam-badge" id="cam-label">📸 ลูกฟุตบอล</div>
         <div class="cam-top-right">
           <div class="timer-badge" id="cam-timer">⏱ 2:00</div>
+          <button class="cam-switch" onclick="switchCamera()" title="สลับกล้องหน้า/หลัง">🔄</button>
           <button class="cam-close" onclick="stopCamera(); showScreen('s-challenge')">✕</button>
         </div>
       </div>
@@ -570,7 +573,7 @@
     [
       { th: "ถ่ายภาพคู่",   en: "two people posing together in one photo (a couple / duo shot)", emoji: "👫", hint: "💡 ชวนเพื่อนหรือคนข้างๆ มาถ่ายรูปคู่กัน" },
       { th: "ตุ๊กตา",       en: "a doll or stuffed toy",                                          emoji: "🧸", hint: "💡 หาตุ๊กตาหรือของเล่นตุ๊กตารอบตัว" },
-      { th: "ของห้อยกระเป๋า",  en: "a charm, keychain or accessory hanging from a bag",              emoji: "🎒", hint: "💡 มองหาพวงกุญแจหรือของห้อยกระเป๋า" },
+      { th: "ของห้อยกระเป๋า",  en: "a keychain or charm accessory — attached to a bag, or just held/shown by itself",  emoji: "🎒", hint: "💡 มองหาพวงกุญแจหรือของห้อยกระเป๋า" },
     ],
     // รอบที่ 2
     [
@@ -581,12 +584,12 @@
     [
       { th: "แว่นตา",   en: "eyeglasses or sunglasses",   emoji: "👓", hint: "💡 แว่นตาของตัวเองหรือคนข้างๆ ก็ได้" },
       { th: "นาฬิกา",   en: "watch or clock",             emoji: "⌚", hint: "💡 นาฬิกาข้อมือ นาฬิกาแขวน หรือนาฬิกาในมือถือ" },
-      { th: "ลูกโป่ง",  en: "balloon",                    emoji: "🎈", hint: "💡 ลูกโป่งของจริงหรือรูปลูกโป่งก็ได้" },
+      { th: "ลูกโป่ง",  en: "a balloon (a real one, or a photo/picture of one is fine too)", emoji: "🎈", hint: "💡 ลูกโป่งของจริงหรือรูปลูกโป่งก็ได้" },
       { th: "ปากกา",    en: "pen",                        emoji: "🖊️", hint: "💡 หาปากกาอะไรก็ได้รอบตัว" },
       { th: "สมุด",      en: "notebook",                   emoji: "📓", hint: "💡 สมุดจด หรือสมุดเล่มไหนก็ได้" },
-      { th: "กระเป๋า",   en: "bag or purse",               emoji: "👜", hint: "💡 กระเป๋าถือ กระเป๋าสะพาย หรือกระเป๋าเป้" },
+      { th: "กระเป๋า",   en: "any kind of bag — handbag, purse, shoulder bag, or backpack", emoji: "👜", hint: "💡 กระเป๋าถือ กระเป๋าสะพาย หรือกระเป๋าเป้" },
       { th: "รองเท้า",   en: "shoes or sneakers",          emoji: "👟", hint: "💡 รองเท้าของตัวเองหรือคนข้างๆ ก็ได้" },
-      { th: "ขวดน้ำ",    en: "water bottle",               emoji: "🧴", hint: "💡 ขวดน้ำดื่มหรือแก้วน้ำก็ได้" },
+      { th: "ภาชนะใส่น้ำ", en: "any container that holds water or a drink — a water bottle, cup, glass, tumbler, or mug all count", emoji: "🧴", hint: "💡 ขวดน้ำ แก้วน้ำ หรือภาชนะใส่น้ำอะไรก็ได้" },
       { th: "แหวน",      en: "ring",                       emoji: "💍", hint: "💡 แหวนของตัวเองหรือคนข้างๆ ก็ได้" },
     ],
   ];
@@ -637,6 +640,7 @@
     rounds: [],     // ประวัติแต่ละรอบ { th, emoji, correct }
     capturedB64: null,
     stream: null,
+    facingMode: 'environment', // 'environment' = กล้องหลัง, 'user' = กล้องหน้า
     timeLeft: TOTAL_TIME,
     timerInterval: null,
     gameEnded: false,
@@ -819,19 +823,27 @@
   // ── CAMERA ────────────────────────────────────────────────
   async function openCamera() {
     if (state.gameEnded) return;
+    stopCamera(); // ปิดสตรีมเก่าก่อนเปิดใหม่ (เผื่อสลับกล้อง)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } },
+        video: { facingMode: { ideal: state.facingMode }, width: { ideal: 1280 }, height: { ideal: 960 } },
         audio: false,
       });
       state.stream = stream;
       const video = document.getElementById('video');
       video.srcObject = stream;
+      video.classList.toggle('mirrored', state.facingMode === 'user');
       await video.play();
       showScreen('s-camera');
     } catch (err) {
       showToast('ไม่สามารถเปิดกล้องได้ — กรุณาอนุญาตการใช้กล้องในเบราว์เซอร์');
     }
+  }
+
+  function switchCamera() {
+    if (state.gameEnded) return;
+    state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
+    openCamera();
   }
 
   function stopCamera() {
