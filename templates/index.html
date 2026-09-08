@@ -277,6 +277,9 @@
     }
     .result-badge.correct  { background: #14532d; color: var(--success); }
     .result-badge.wrong    { background: #450a0a; color: var(--danger);  }
+    .result-badge.prize-big    { background: #14532d; color: var(--success); }
+    .result-badge.prize-medium { background: #422006; color: var(--gold);    }
+    .result-badge.prize-small  { background: #1e3a8a; color: #60a5fa;       }
 
     .result-box {
       background: #0a1628;
@@ -292,6 +295,32 @@
       max-height: 140px;
       object-fit: cover;
       opacity: .65;
+    }
+
+    /* ══════════════════════════════
+       SCREEN 6 — SUMMARY
+    ══════════════════════════════ */
+    #s-summary { justify-content: center; gap: 14px; }
+    .sum-rounds { display: flex; flex-direction: column; gap: 8px; }
+    .sum-round-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0a1628;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+    .sum-round-item .sum-round-name { display: flex; align-items: center; gap: 8px; }
+    .locked-note {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent2);
+      background: rgba(99,102,241,.1);
+      border: 1px solid rgba(99,102,241,.35);
+      border-radius: 12px;
+      padding: 10px 14px;
     }
 
     /* ── LOADING ── */
@@ -352,7 +381,7 @@
     </div>
     <div id="start-score" style="display:none;" class="score-bar">
       <div class="score-cell">
-        <div class="score-label">แต้ม</div>
+        <div class="score-label">ภาพที่ถูก</div>
         <div class="score-val" id="disp-score" style="color:var(--gold)">0</div>
       </div>
       <div class="score-cell">
@@ -364,11 +393,18 @@
         <div class="score-val timer-value" id="disp-time" style="color:var(--accent2)">2:00</div>
       </div>
     </div>
+    <div class="challenge-hint" style="text-align:left; line-height:1.7;">
+      <b>📋 กติกา</b><br>
+      ⏱ เวลาจำกัด 2 นาที ถ่ายให้ครบ 3 ภาพ<br>
+      🧮 คะแนน = เวลาที่เหลือ (วินาที) × ภาพที่ถูก<br>
+      &nbsp;&nbsp;&nbsp;ตัวอย่าง: เหลือเวลา 60 วิ ถูก 3 ภาพ → 60 × 3 = 180 คะแนน<br>
+      🏆 180-360 คะแนน = รางวัลใหญ่<br>
+      🥈 90-179 คะแนน = รางวัลกลาง<br>
+      🎁 0-89 คะแนน = รางวัลเล็ก<br>
+      🔒 เล่นได้เพียงวันละ 1 ครั้งเท่านั้น
+    </div>
     <div>
       <button class="btn btn-primary" onclick="startRound()">เริ่มภารกิจ ⚡</button>
-      <div style="margin-top:16px; color:var(--muted); font-size:12px; text-align:center; line-height:1.6;">
-        ✅ AI บอกว่าถูก = +1 แต้ม &nbsp;|&nbsp; ⏱ เวลาจำกัด 2 นาที (3 ภาพ)
-      </div>
     </div>
   </div>
 
@@ -387,7 +423,7 @@
     <div style="flex:1"></div>
     <div>
       <button class="btn btn-primary" onclick="openCamera()">📷 เปิดกล้อง</button>
-      <button class="btn btn-outline" onclick="showScreen('s-start')">← กลับหน้าหลัก</button>
+      <button class="btn btn-outline" onclick="goHome()">← กลับหน้าหลัก</button>
     </div>
   </div>
 
@@ -413,7 +449,7 @@
   <!-- SCREEN 4: PREVIEW -->
   <div id="s-preview" class="screen">
     <div class="brand" style="margin-bottom:0">
-      <div class="brand-tag">The Elevate</div>
+      <div class="brand-tag">SNAP IT!</div>
     </div>
     <div class="preview-label">ตรวจสอบรูปก่อนส่ง AI</div>
     <div class="timer-badge" id="preview-timer">⏱ 2:00</div>
@@ -438,7 +474,7 @@
   <!-- SCREEN 5: RESULT -->
   <div id="s-result" class="screen">
     <div class="brand" style="margin-bottom:0">
-      <div class="brand-tag">The Elevate</div>
+      <div class="brand-tag">SNAP IT!</div>
     </div>
     <div class="result-verdict">
       <div class="result-icon" id="res-icon">✅</div>
@@ -455,7 +491,7 @@
     <img id="res-thumb" src="" alt="thumb" class="result-thumb" />
     <div class="score-bar">
       <div class="score-cell">
-        <div class="score-label">แต้มสะสม</div>
+        <div class="score-label">ภาพที่ถูก</div>
         <div class="score-val" id="res-score" style="color:var(--gold)">0</div>
       </div>
       <div class="score-cell">
@@ -467,10 +503,42 @@
         <div class="score-val timer-value" id="res-time" style="color:var(--accent2)">2:00</div>
       </div>
     </div>
-    <div class="game-over-note" id="res-game-over-note" style="display:none;">🏁 จบเกม! นี่คือแต้มสุดท้ายของคุณ</div>
+    <div class="game-over-note" id="res-game-over-note" style="display:none;">🏁 จบเกมแล้ว! กดปุ่มด้านล่างเพื่อดูผลสรุปและรางวัลของคุณ</div>
     <button class="btn btn-primary" id="btn-next-round" onclick="startRound()">ภารกิจต่อไป →</button>
-    <button class="btn btn-success" id="btn-play-again" style="display:none;" onclick="resetGame()">เล่นใหม่ 🔄</button>
-    <button class="btn btn-outline" onclick="showScreen('s-start')">← หน้าหลัก</button>
+    <button class="btn btn-primary" id="btn-view-summary" style="display:none;" onclick="showFinalSummary()">ดูผลสรุป 🏁</button>
+    <button class="btn btn-outline" id="btn-back-home" onclick="goHome()">← หน้าหลัก</button>
+  </div>
+
+  <!-- SCREEN 6: SUMMARY -->
+  <div id="s-summary" class="screen">
+    <div class="brand">
+      <div class="brand-tag">The Elevate</div>
+      <div class="brand-title">สรุปผลเกม SNAP IT!</div>
+    </div>
+    <div class="result-verdict">
+      <div class="result-icon" id="sum-prize-emoji">🏆</div>
+      <div class="result-badge prize-big" id="sum-prize-badge">รางวัลใหญ่</div>
+    </div>
+    <div class="score-bar">
+      <div class="score-cell">
+        <div class="score-label">ภาพที่ถูก</div>
+        <div class="score-val" id="sum-correct" style="color:var(--success)">0/3</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">เวลาที่เหลือ</div>
+        <div class="score-val" id="sum-time-left" style="color:var(--accent2)">0</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">คะแนนรวม</div>
+        <div class="score-val" id="sum-final-score" style="color:var(--gold)">0</div>
+      </div>
+    </div>
+    <div class="result-box">
+      <div class="result-box-label">วิธีคิดคะแนน</div>
+      <div class="result-box-text" id="sum-formula">เวลาที่เหลือ × ภาพที่ถูก = คะแนนรวม</div>
+    </div>
+    <div class="sum-rounds" id="sum-rounds"></div>
+    <div class="locked-note">🔒 คุณเล่นครบแล้วสำหรับวันนี้ กลับมาเล่นใหม่ได้พรุ่งนี้นะ!</div>
   </div>
 
 </div>
@@ -480,31 +548,83 @@
 
 <script>
   // ── CHALLENGES ──────────────────────────────────────────
-  const CHALLENGES = [
-    { th: "ลูกฟุตบอล",       en: "football / soccer ball", emoji: "⚽", hint: "💡 หาลูกบอลในออฟฟิศหรือถ่ายจากหน้าจอก็ได้" },
-    { th: "แก้วกาแฟ",        en: "coffee cup or mug",       emoji: "☕", hint: "💡 แก้วกาแฟ แก้วน้ำ หรือแก้วพลาสติกก็ได้" },
-    { th: "ดินสอหรือปากกา",  en: "pencil or pen",           emoji: "✏️", hint: "💡 หาอุปกรณ์เขียนอะไรก็ได้รอบตัว" },
-    { th: "โทรศัพท์มือถือ",  en: "mobile phone",            emoji: "📱", hint: "💡 ถ่ายโทรศัพท์เครื่องอื่น หรือโชว์เคสมือถือ" },
-    { th: "หนังสือหรือสมุด", en: "book or notebook",         emoji: "📖", hint: "💡 หนังสือ สมุด หรือเอกสารที่เย็บเล่ม" },
-    { th: "รองเท้า",         en: "shoes or sneakers",        emoji: "👟", hint: "💡 รองเท้าของตัวเองหรือคนข้างๆ ก็ได้" },
-    { th: "นาฬิกา",          en: "watch or clock",           emoji: "⌚", hint: "💡 นาฬิกาข้อมือ นาฬิกาแขวน หรือนาฬิกาในมือถือ" },
-    { th: "พืชหรือต้นไม้",   en: "plant or flower",          emoji: "🌿", hint: "💡 ต้นไม้ใบไม้ หรือดอกไม้ก็ได้" },
+  // แต่ละรอบดึงโจทย์แบบสุ่ม 1 อย่าง จาก "ลิสต์ของรอบนั้น" (รอบที่ 1 = ลิสต์ที่ 1, รอบที่ 2 = ลิสต์ที่ 2, รอบที่ 3 = ลิสต์ที่ 3)
+  const CHALLENGE_LISTS = [
+    // รอบที่ 1
+    [
+      { th: "ถ่ายภาพคู่",   en: "two people posing together in one photo (a couple / duo shot)", emoji: "👫", hint: "💡 ชวนเพื่อนหรือคนข้างๆ มาถ่ายรูปคู่กัน" },
+      { th: "ตุ๊กตา",       en: "a doll or stuffed toy",                                          emoji: "🧸", hint: "💡 หาตุ๊กตาหรือของเล่นตุ๊กตารอบตัว" },
+      { th: "ห้อยกระเป๋า",  en: "a charm, keychain or accessory hanging from a bag",              emoji: "🎒", hint: "💡 มองหาพวงกุญแจหรือของห้อยกระเป๋า" },
+    ],
+    // รอบที่ 2
+    [
+      { th: "ถ่ายเงาสนุกๆ",  en: "a fun or creative shadow of a person or object", emoji: "🌓", hint: "💡 หามุมแสงแล้วสร้างเงาแบบสนุกๆ" },
+      { th: "กางเกงสีฟ้า",   en: "blue pants or blue jeans",                       emoji: "👖", hint: "💡 กางเกงยีนส์หรือกางเกงสีฟ้าของตัวเองหรือคนข้างๆ" },
+    ],
+    // รอบที่ 3
+    [
+      { th: "แว่นตา",   en: "eyeglasses or sunglasses",   emoji: "👓", hint: "💡 แว่นตาของตัวเองหรือคนข้างๆ ก็ได้" },
+      { th: "นาฬิกา",   en: "watch or clock",             emoji: "⌚", hint: "💡 นาฬิกาข้อมือ นาฬิกาแขวน หรือนาฬิกาในมือถือ" },
+      { th: "ลูกโป่ง",  en: "balloon",                    emoji: "🎈", hint: "💡 ลูกโป่งของจริงหรือรูปลูกโป่งก็ได้" },
+      { th: "ปากกา",    en: "pen",                        emoji: "🖊️", hint: "💡 หาปากกาอะไรก็ได้รอบตัว" },
+      { th: "สมุด",      en: "notebook",                   emoji: "�", hint: "💡 สมุดจด หรือสมุดเล่มไหนก็ได้" },
+      { th: "กระเป๋า",   en: "bag or purse",               emoji: "�", hint: "💡 กระเป๋าถือ กระเป๋าสะพาย หรือกระเป๋าเป้" },
+      { th: "รองเท้า",   en: "shoes or sneakers",          emoji: "👟", hint: "💡 รองเท้าของตัวเองหรือคนข้างๆ ก็ได้" },
+      { th: "ขวดน้ำ",    en: "water bottle",               emoji: "🧴", hint: "💡 ขวดน้ำดื่มหรือแก้วน้ำก็ได้" },
+      { th: "แหวน",      en: "ring",                       emoji: "💍", hint: "💡 แหวนของตัวเองหรือคนข้างๆ ก็ได้" },
+    ],
   ];
 
   // ── GAME CONFIG ───────────────────────────────────────────
-  const TOTAL_ROUNDS = 3;   // 3 ภาพต่อเกม
+  const TOTAL_ROUNDS = CHALLENGE_LISTS.length; // 3 ภาพต่อเกม (1 โจทย์ต่อลิสต์)
   const TOTAL_TIME   = 120; // 2 นาที (วินาที)
+  const STORAGE_KEY  = 'snapit_daily_result';
+
+  // ── PRIZE TIERS ────────────────────────────────────────────
+  // คะแนน = เวลาที่เหลือ (วินาที) × จำนวนภาพที่ถูก
+  function getPrizeTier(score) {
+    if (score >= 180) return { key: 'big',    label: 'รางวัลใหญ่', emoji: '🏆' };
+    if (score >= 90)  return { key: 'medium', label: 'รางวัลกลาง', emoji: '🥈' };
+    return              { key: 'small',  label: 'รางวัลเล็ก',  emoji: '🎁' };
+  }
+
+  // ── DAILY PLAY LOCK (localStorage) ─────────────────────────
+  function getTodayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function loadTodayResult() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      return data.date === getTodayStr() ? data : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveTodayResult(result) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: getTodayStr(), ...result }));
+    } catch (e) {
+      // localStorage ไม่พร้อมใช้งาน (private mode ฯลฯ) — ปล่อยผ่าน ไม่ให้เกมพัง
+    }
+  }
 
   // ── STATE ────────────────────────────────────────────────
   let state = {
-    score: 0,          // จำนวนแต้มที่สะสมได้ (AI ตัดสินว่าถูก = +1)
-    round: 0,           // จำนวนภาพที่ถ่ายและให้ AI ตัดสินไปแล้ว
+    score: 0,       // จำนวนภาพที่ AI ตัดสินว่าถูก
+    round: 0,       // จำนวนภาพที่ถ่ายและให้ AI ตัดสินไปแล้ว
     current: null,
+    rounds: [],     // ประวัติแต่ละรอบ { th, emoji, correct }
     capturedB64: null,
     stream: null,
     timeLeft: TOTAL_TIME,
     timerInterval: null,
     gameEnded: false,
+    finalResult: null,
   };
 
   // ── SCREEN MANAGER ────────────────────────────────────────
@@ -563,13 +683,34 @@
     state.gameEnded = true;
     clearInterval(state.timerInterval);
     stopCamera();
-    document.getElementById('btn-next-round').style.display = 'none';
-    document.getElementById('btn-play-again').style.display = 'block';
+
+    // คะแนน = เวลาที่เหลือ (วินาที) × จำนวนภาพที่ถูก
+    const finalScore = state.timeLeft * state.score;
+    state.finalResult = {
+      correctCount: state.score,
+      totalRounds:  TOTAL_ROUNDS,
+      timeLeft:     state.timeLeft,
+      finalScore:   finalScore,
+      prize:        getPrizeTier(finalScore),
+      rounds:       state.rounds,
+    };
+    saveTodayResult(state.finalResult);
+
+    document.getElementById('btn-next-round').style.display     = 'none';
+    document.getElementById('btn-back-home').style.display      = 'none';
+    document.getElementById('btn-view-summary').style.display   = 'block';
     document.getElementById('res-game-over-note').style.display = 'block';
+    document.getElementById('res-game-over-note').textContent   = '🏁 จบเกมแล้ว! กดปุ่มด้านล่างเพื่อดูผลสรุปและรางวัลของคุณ';
   }
 
   function handleTimeout() {
     if (state.gameEnded) return;
+
+    // ภารกิจที่ค้างอยู่ตอนหมดเวลา (ยังไม่ได้ส่งให้ AI ตัดสิน) นับว่าไม่สำเร็จ
+    if (state.current && state.round < TOTAL_ROUNDS && state.rounds.length <= state.round) {
+      state.rounds.push({ th: state.current.th, emoji: state.current.emoji, correct: false });
+    }
+
     finishGame();
 
     document.getElementById('res-icon').textContent = '⏰';
@@ -577,10 +718,8 @@
     badge.textContent = 'หมดเวลา!';
     badge.className   = 'result-badge wrong';
 
-    document.getElementById('res-found').textContent    = `ถ่ายไปได้ ${state.round}/${TOTAL_ROUNDS} ภาพ`;
-    document.getElementById('res-feedback').textContent = state.score > 0
-      ? `เก่งมาก! สะสมแต้มได้ ${state.score} แต้ม 🎯`
-      : `หมดเวลาแล้ว ลองใหม่อีกครั้งนะ 💪`;
+    document.getElementById('res-found').textContent    = `⏰ หมดเวลา! ถ่ายถูก ${state.score}/${TOTAL_ROUNDS} ภาพ`;
+    document.getElementById('res-feedback').textContent = 'เวลาหมดแล้ว มาดูผลสรุปคะแนนกันเลย 👇';
 
     const thumb = document.getElementById('res-thumb');
     if (state.capturedB64) {
@@ -590,7 +729,6 @@
       thumb.style.display = 'none';
     }
 
-    document.getElementById('res-game-over-note').textContent = '⏰ หมดเวลา! นี่คือแต้มสุดท้ายของคุณ';
     updateResultScoreBar();
     showScreen('s-result');
   }
@@ -601,28 +739,44 @@
     document.getElementById('res-time').textContent  = formatTime(state.timeLeft);
   }
 
-  function resetGame() {
-    state.score = 0;
-    state.round = 0;
-    state.current = null;
-    state.capturedB64 = null;
-    state.gameEnded = false;
-    clearInterval(state.timerInterval);
-    state.timeLeft = TOTAL_TIME;
-    updateTimerDisplay();
+  // ── SUMMARY SCREEN ────────────────────────────────────────
+  function displaySummary(data) {
+    document.getElementById('sum-prize-emoji').textContent = data.prize.emoji;
+    const badge = document.getElementById('sum-prize-badge');
+    badge.textContent = data.prize.label;
+    badge.className   = 'result-badge prize-' + data.prize.key;
 
-    document.getElementById('start-score').style.display = 'none';
-    document.getElementById('btn-next-round').style.display = 'block';
-    document.getElementById('btn-play-again').style.display = 'none';
-    document.getElementById('res-game-over-note').style.display = 'none';
-    document.getElementById('res-thumb').style.display = '';
+    document.getElementById('sum-correct').textContent     = `${data.correctCount}/${data.totalRounds}`;
+    document.getElementById('sum-time-left').textContent   = formatTime(data.timeLeft);
+    document.getElementById('sum-final-score').textContent = data.finalScore;
+    document.getElementById('sum-formula').textContent     =
+      `${data.timeLeft} วินาที × ${data.correctCount} ภาพที่ถูก = ${data.finalScore} คะแนน`;
 
+    const wrap = document.getElementById('sum-rounds');
+    wrap.innerHTML = '';
+    (data.rounds || []).forEach(r => {
+      const el = document.createElement('div');
+      el.className = 'sum-round-item';
+      el.innerHTML = `<span class="sum-round-name">${r.emoji} ${r.th}</span><span>${r.correct ? '✅' : '❌'}</span>`;
+      wrap.appendChild(el);
+    });
+
+    showScreen('s-summary');
+  }
+
+  function showFinalSummary() {
+    if (state.finalResult) displaySummary(state.finalResult);
+  }
+
+  // ── NAVIGATION ────────────────────────────────────────────
+  function goHome() {
+    if (state.gameEnded) { showFinalSummary(); return; }
     showScreen('s-start');
   }
 
   // ── ROUND SETUP ───────────────────────────────────────────
   function startRound() {
-    if (state.gameEnded) resetGame();
+    if (state.gameEnded) { showFinalSummary(); return; }
     if (state.round === 0) startTimer();
 
     // Update start screen score display
@@ -632,10 +786,9 @@
       document.getElementById('disp-round').textContent = `${state.round}/${TOTAL_ROUNDS}`;
     }
 
-    // Pick a random challenge (avoid repeating last one)
-    let pick;
-    do { pick = CHALLENGES[Math.floor(Math.random() * CHALLENGES.length)]; }
-    while (CHALLENGES.length > 1 && pick === state.current);
+    // สุ่มโจทย์ 1 อย่างจากลิสต์ของรอบนี้ (รอบที่ 1 = ลิสต์ที่ 1, รอบที่ 2 = ลิสต์ที่ 2, รอบที่ 3 = ลิสต์ที่ 3)
+    const list = CHALLENGE_LISTS[state.round];
+    const pick = list[Math.floor(Math.random() * list.length)];
     state.current = pick;
 
     document.getElementById('ch-round').textContent = `ภารกิจที่ ${state.round + 1}/${TOTAL_ROUNDS}`;
@@ -714,7 +867,8 @@
       if (data.error) throw new Error(data.error);
       if (state.gameEnded) return; // หมดเวลาไปแล้วระหว่างรอ AI ตัดสิน
 
-      // Update state — AI บอกว่าถูก = +1 แต้ม
+      // บันทึกผลของรอบนี้ไว้ทำหน้าสรุป — AI บอกว่าถูก = +1 ภาพที่ถูก
+      state.rounds.push({ th: state.current.th, emoji: state.current.emoji, correct: !!data.correct });
       state.round++;
       if (data.correct) state.score++;
 
@@ -732,10 +886,7 @@
 
       updateResultScoreBar();
 
-      if (state.round >= TOTAL_ROUNDS) {
-        finishGame();
-        document.getElementById('res-game-over-note').textContent = '🏁 ครบ 3 ภาพแล้ว! นี่คือแต้มสุดท้ายของคุณ';
-      }
+      if (state.round >= TOTAL_ROUNDS) finishGame();
 
       showScreen('s-result');
 
@@ -744,6 +895,20 @@
       showScreen('s-preview');
     }
   }
+  // ── INIT — เล่นได้วันละ 1 ครั้งเท่านั้น ──────────────────────
+  function initApp() {
+    const played = loadTodayResult();
+    if (played) {
+      // วันนี้เล่นจบไปแล้ว → ล็อกเกม แล้วโชว์หน้าสรุปสุดท้ายเลย
+      state.gameEnded   = true;
+      state.finalResult = played;
+      displaySummary(played);
+      return;
+    }
+    showScreen('s-start');
+  }
+
+  document.addEventListener('DOMContentLoaded', initApp);
 </script>
 </body>
 </html>
