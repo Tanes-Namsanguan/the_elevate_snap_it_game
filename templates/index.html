@@ -141,9 +141,21 @@
       gap: 20px;
     }
     .start-hero { text-align: center; padding: 12px 0; }
-    .start-icon { font-size: 72px; margin-bottom: 12px; }
+    .start-icon-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 44px;
+      margin-bottom: 12px;
+    }
+    .start-icon-flow .flow-arrow { font-size: 22px; color: var(--muted); }
     .start-game-title { font-size: 40px; font-weight: 900; letter-spacing: -1px; }
     .start-sub { color: var(--muted); font-size: 14px; margin-top: 6px; line-height: 1.6; }
+
+    /* ── BIGGER BRAND HEADER (start screen) ── */
+    .brand-hero .brand-tag   { font-size: 20px; letter-spacing: 2px; }
+    .brand-hero .brand-title { font-size: 16px; font-weight: 600; margin-top: 4px; }
 
     /* ══════════════════════════════
        SCREEN 2 — CHALLENGE
@@ -370,12 +382,16 @@
 
   <!-- SCREEN 1: START -->
   <div id="s-start" class="screen active">
-    <div class="brand">
+    <div class="brand brand-hero">
       <div class="brand-tag">The Elevate</div>
       <div class="brand-title">Photo Challenge</div>
     </div>
     <div class="start-hero">
-      <div class="start-icon">📸</div>
+      <div class="start-icon-flow">
+        <span>�</span><span class="flow-arrow">→</span>
+        <span>�📸</span><span class="flow-arrow">→</span>
+        <span>🤖</span>
+      </div>
       <div class="start-game-title">SNAP IT!</div>
       <div class="start-sub">รับโจทย์ → ถ่ายรูป → ให้ AI ตัดสิน<br>สะสมแต้มให้มากที่สุดก่อนหมดเวลา!</div>
     </div>
@@ -554,7 +570,7 @@
     [
       { th: "ถ่ายภาพคู่",   en: "two people posing together in one photo (a couple / duo shot)", emoji: "👫", hint: "💡 ชวนเพื่อนหรือคนข้างๆ มาถ่ายรูปคู่กัน" },
       { th: "ตุ๊กตา",       en: "a doll or stuffed toy",                                          emoji: "🧸", hint: "💡 หาตุ๊กตาหรือของเล่นตุ๊กตารอบตัว" },
-      { th: "ห้อยกระเป๋า",  en: "a charm, keychain or accessory hanging from a bag",              emoji: "🎒", hint: "💡 มองหาพวงกุญแจหรือของห้อยกระเป๋า" },
+      { th: "ของห้อยกระเป๋า",  en: "a charm, keychain or accessory hanging from a bag",              emoji: "🎒", hint: "💡 มองหาพวงกุญแจหรือของห้อยกระเป๋า" },
     ],
     // รอบที่ 2
     [
