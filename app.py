@@ -1,10 +1,12 @@
 import os
+import io
 import json
 import base64
 import logging
+import qrcode
 from google import genai
 from google.genai import types
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file
 
 # ── LOGGING SETUP ─────────────────────────────────────────
 logging.basicConfig(
@@ -14,6 +16,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# ── QR CODE SETUP ─────────────────────────────────────────
+GAME_URL = os.environ.get("GAME_URL", "https://the-elevate-snap-it-game.onrender.com/")
 
 # ── GEMINI CLIENT SETUP ───────────────────────────────────
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -49,6 +54,28 @@ def health():
     }
     logger.info(f"🏥 Health check: {status}")
     return jsonify(status)
+
+
+@app.route("/qrcode")
+def qrcode_image():
+    """Return a PNG QR code that links to the game (or ?url=... to encode a custom link)."""
+    target_url = request.args.get("url", GAME_URL)
+    logger.info(f"🔗 GET /qrcode — generating QR code for: {target_url}")
+
+    qr = qrcode.QRCode(
+        version=None,  # auto-size based on data
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(target_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return send_file(buf, mimetype="image/png", download_name="the-elevate-qr.png")
 
 
 @app.route("/analyze", methods=["POST"])
