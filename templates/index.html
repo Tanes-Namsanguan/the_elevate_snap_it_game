@@ -452,7 +452,7 @@
     </div>
     <div class="challenge-hint">
       <b>📋 กติกา</b>
-      ⏱ เวลาจำกัด 2 นาที ถ่ายให้ครบ 3 ภาพ<br>
+      ⏱ เวลาจำกัด 1 นาที ถ่ายให้ครบ 3 ภาพ<br>
       <span class="hint-punchline">🧮 ความไวเป็นเรื่องของปีศาจ</span>
     </div>
     <div>
@@ -635,13 +635,13 @@
 
   // ── GAME CONFIG ───────────────────────────────────────────
   const TOTAL_ROUNDS = CHALLENGE_LISTS.length; // 3 ภาพต่อเกม (1 โจทย์ต่อลิสต์)
-  const TOTAL_TIME   = 120; // 2 นาที (วินาที)
+  const TOTAL_TIME   = 60; // 1 นาที (วินาที)
   const STORAGE_KEY  = 'snapit_daily_result';
 
   // ── PRIZE TIERS ────────────────────────────────────────────
   // คะแนน = เวลาที่เหลือ (วินาที) × จำนวนภาพที่ถูก
   function getPrizeTier(score) {
-    if (score >= 180) return { key: 'big',    label: 'รางวัลใหญ่', emoji: '🏆' };
+    if (score >= 135) return { key: 'big',    label: 'รางวัลใหญ่', emoji: '🏆' };
     if (score >= 90)  return { key: 'medium', label: 'รางวัลกลาง', emoji: '🥈' };
     return              { key: 'small',  label: 'รางวัลเล็ก',  emoji: '🎁' };
   }

@@ -40,8 +40,6 @@ GEMINI_REQUEST_TIMEOUT_MS = 25_000  # 25 วินาทีต่อ 1 คีย
 # ระดับ 10-15 วิ ก่อนจะสำเร็จ — ตั้งสั้นไปจะไปตัดจบ request ที่กำลังจะสำเร็จอยู่ดีๆ)
 # ถ้าเปลี่ยนค่านี้ ให้ปรับ gunicorn --timeout ให้เผื่อไว้มากกว่า (จำนวนคีย์ทั้งหมด × ค่านี้)
 # ด้วย ดู GEMINI_API_SETUP.md
-RETRYABLE_STATUS_CODES = (429, 503, 504)  # quota เต็ม / overload / deadline exceeded
-
 
 def _split_keys(raw):
     """แยกค่าด้วยจุลภาคเสมอ เผื่อมีคนใส่หลายคีย์รวมกันในตัวแปรเดียว ไม่ว่าจะตั้งชื่อ
@@ -127,10 +125,12 @@ def qrcode_image():
 
 
 def _generate_with_failover(prompt, image_bytes):
-    """สุ่มลำดับ client (API key) แล้วลองยิงไปเรื่อยๆ — ถ้าคีย์ไหนโดน rate-limit/quota
-    เต็ม (429), Gemini ล้ม (503/504), หรือค้าง/ตอบช้าเกิน GEMINI_REQUEST_TIMEOUT_MS ก็ข้าม
-    ไปลองคีย์ถัดไปให้อัตโนมัติ วิธีนี้กระจายโหลดข้าม process ของ gunicorn ได้โดยไม่ต้องมี
-    shared state (เช่น Redis) และไม่มี downtime ถ้าคีย์ใดคีย์หนึ่งใช้โควต้าฟรีหมดในระหว่างวัน"""
+    """สุ่มลำดับ client (API key) แล้วลองยิงไปเรื่อยๆ จนกว่าจะสำเร็จหรือหมดทุกคีย์ —
+    ไม่ว่าจะโดน rate-limit/quota เต็ม (429), Gemini ล้ม (503/504), คีย์เสีย/ไม่มีสิทธิ์
+    (400/401/403 ฯลฯ), หรือค้าง/ตอบช้าเกิน GEMINI_REQUEST_TIMEOUT_MS ก็ข้ามไปลองคีย์ถัดไป
+    ทันที (เดิมจะ raise ทันทีถ้า error code ไม่ใช่ 429/503 ทำให้คีย์ที่เสีย/ผิดสิทธิ์ 1 ตัว
+    พังทั้ง request แม้คีย์อื่นจะใช้ได้ปกติก็ตาม) วิธีนี้กระจายโหลดข้าม process ของ gunicorn
+    ได้โดยไม่ต้องมี shared state (เช่น Redis) และไม่มี downtime ถ้าคีย์ใดคีย์หนึ่งใช้ไม่ได้"""
     order = list(range(len(clients)))
     random.shuffle(order)
 
@@ -151,10 +151,8 @@ def _generate_with_failover(prompt, image_bytes):
             return response
         except genai_errors.APIError as e:
             last_err = e
-            if e.code in RETRYABLE_STATUS_CODES:  # quota / overload / deadline — try next key
-                logger.warning(f"⚠️ Key #{i + 1} failed ({e.code}), trying next key...")
-                continue
-            raise  # other API errors (bad request, auth, etc.) — don't retry
+            logger.warning(f"⚠️ Key #{i + 1} failed ({e.code}: {getattr(e, 'message', e)}), trying next key...")
+            continue
         except (httpx.TimeoutException, httpx.ConnectError) as e:
             last_err = e
             logger.warning(f"⚠️ Key #{i + 1} timed out/unreachable ({e}), trying next key...")
