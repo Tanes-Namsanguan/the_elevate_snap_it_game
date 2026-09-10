@@ -30,7 +30,9 @@ GAME_URL = os.environ.get("GAME_URL", "https://the-elevate-snap-it-game.onrender
 #   1) GEMINI_API_KEYS = "key1,key2,key3"   (คั่นด้วยจุลภาค แนะนำ)
 #   2) GEMINI_API_KEY_1 / GEMINI_API_KEY_2 / GEMINI_API_KEY_3 (แยกตัวแปร)
 # ยังรองรับ GEMINI_API_KEY ตัวเดียวแบบเดิมด้วย (backward compatible)
-MODEL = "gemini-3.5-flash-lite"
+MODEL = "gemini-flash-lite-latest"  # alias ของ Google เอง ชี้ไปที่โมเดล lite รุ่นล่าสุดเสมอ
+# กันปัญหาที่เจอมาแล้ว: ระบุชื่อรุ่นตรงๆ (เช่น "gemini-2.0-flash-lite") พอ Google เลิก
+# ซัพพอร์ตรุ่นนั้น (404 "no longer available") แอปก็พังทันทีจนกว่าจะมาแก้โค้ด/deploy ใหม่
 
 # กันไม่ให้ 1 request ที่ Gemini ตอบช้า/ค้าง ไปฉุด gunicorn worker จน hit WORKER TIMEOUT
 # (ค่า default ของ gunicorn คือ 30s — ถ้า Gemini ค้างนานกว่านั้น worker ทั้งตัวจะโดน
