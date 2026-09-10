@@ -168,28 +168,12 @@
     .challenge-name  { font-size: 36px; font-weight: 800; text-align: center; margin-top: 4px; }
     .challenge-hint  {
       background: #0a1628;
-      border-radius: 16px;
-      padding: 18px 20px;
+      border-radius: 12px;
+      padding: 12px 16px;
       color: var(--muted);
-      font-size: 15px;
-      text-align: left;
-      line-height: 1.75;
-    }
-    .challenge-hint b {
-      color: var(--text);
-      display: block;
-      margin-bottom: 8px;
-      font-size: 17px;
-    }
-    .hint-punchline {
-      display: block;
-      margin-top: 10px;
-      font-size: 22px;
-      font-weight: 800;
-      color: #f59e0b;
-      text-shadow: 0 0 8px rgba(245,158,11,.4);
-      line-height: 1.4;
-      letter-spacing: .5px;
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.5;
     }
 
     /* ══════════════════════════════
@@ -450,10 +434,15 @@
         <div class="score-val timer-value" id="disp-time" style="color:var(--accent2)">2:00</div>
       </div>
     </div>
-    <div class="challenge-hint">
-      <b>📋 กติกา</b>
+    <div class="challenge-hint" style="text-align:left; line-height:1.7;">
+      <b>📋 กติกา</b><br>
       ⏱ เวลาจำกัด 2 นาที ถ่ายให้ครบ 3 ภาพ<br>
-      <span class="hint-punchline">🧮 ความไวเป็นเรื่องของปีศาจ !!</span>
+      🧮 คะแนน = เวลาที่เหลือ (วินาที) × ภาพที่ถูก<br>
+      &nbsp;&nbsp;&nbsp;ตัวอย่าง: เหลือเวลา 60 วิ ถูก 3 ภาพ → 60 × 3 = 180 คะแนน<br>
+      🏆 180-360 คะแนน = รางวัลใหญ่<br>
+      🥈 90-179 คะแนน = รางวัลกลาง<br>
+      🎁 0-89 คะแนน = รางวัลเล็ก<br>
+      🔒 เล่นได้เพียงวันละ 1 ครั้งเท่านั้น
     </div>
     <div>
       <button class="btn btn-primary" onclick="startRound()">เริ่มภารกิจ ⚡</button>
@@ -592,14 +581,15 @@
     </div>
     <div class="sum-rounds" id="sum-rounds"></div>
     <div class="locked-note">🔒 คุณเล่นครบแล้วสำหรับวันนี้ กลับมาเล่นใหม่ได้พรุ่งนี้นะ!</div>
-    <!-- ADMIN RESET (ซ่อนเนียนๆ ไว้ให้แอดมินกดปลดล็อกให้ผู้เล่นได้ เฉพาะหน้าสรุป) -->
-    <button id="admin-reset-btn" class="admin-reset-btn" onclick="adminReset()" title="admin">⚙️</button>
   </div>
 
 </div>
 
 <!-- TOAST -->
 <div id="toast"></div>
+
+<!-- ADMIN RESET (ซ่อนเนียนๆ ไว้ให้แอดมินกดปลดล็อกให้ผู้เล่นได้) -->
+<button id="admin-reset-btn" class="admin-reset-btn" onclick="adminReset()" title="admin">⚙️</button>
 
 <script>
   // ── CHALLENGES ──────────────────────────────────────────
