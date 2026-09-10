@@ -36,8 +36,11 @@ MODEL = "gemini-3.5-flash-lite"
 # (ค่า default ของ gunicorn คือ 30s — ถ้า Gemini ค้างนานกว่านั้น worker ทั้งตัวจะโดน
 # SIGKILL กลางคัน ทำให้ request อื่นๆ ที่รออยู่ในคิวพังไปด้วย) แทนที่จะรอจนถูกฆ่า
 # เราตัดจบเองก่อนที่ระดับ HTTP client แล้วลองคีย์ถัดไปแทน
-GEMINI_REQUEST_TIMEOUT_MS = 15_000  # 15 วินาทีต่อ 1 คีย์ — ถ้าเปลี่ยนค่านี้ ให้ปรับ
-# gunicorn --timeout ให้เผื่อไว้มากกว่า (จำนวนคีย์ทั้งหมด × ค่านี้) ด้วย ดู GEMINI_API_SETUP.md
+GEMINI_REQUEST_TIMEOUT_MS = 25_000  # 25 วินาทีต่อ 1 คีย์ (Gemini เองบางครั้งตอบช้าจริงๆ
+# ระดับ 10-15 วิ ก่อนจะสำเร็จ — ตั้งสั้นไปจะไปตัดจบ request ที่กำลังจะสำเร็จอยู่ดีๆ)
+# ถ้าเปลี่ยนค่านี้ ให้ปรับ gunicorn --timeout ให้เผื่อไว้มากกว่า (จำนวนคีย์ทั้งหมด × ค่านี้)
+# ด้วย ดู GEMINI_API_SETUP.md
+RETRYABLE_STATUS_CODES = (429, 503, 504)  # quota เต็ม / overload / deadline exceeded
 
 
 def _split_keys(raw):
@@ -125,7 +128,7 @@ def qrcode_image():
 
 def _generate_with_failover(prompt, image_bytes):
     """สุ่มลำดับ client (API key) แล้วลองยิงไปเรื่อยๆ — ถ้าคีย์ไหนโดน rate-limit/quota
-    เต็ม (429), Gemini ล้ม (503), หรือค้าง/ตอบช้าเกิน GEMINI_REQUEST_TIMEOUT_MS ก็ข้าม
+    เต็ม (429), Gemini ล้ม (503/504), หรือค้าง/ตอบช้าเกิน GEMINI_REQUEST_TIMEOUT_MS ก็ข้าม
     ไปลองคีย์ถัดไปให้อัตโนมัติ วิธีนี้กระจายโหลดข้าม process ของ gunicorn ได้โดยไม่ต้องมี
     shared state (เช่น Redis) และไม่มี downtime ถ้าคีย์ใดคีย์หนึ่งใช้โควต้าฟรีหมดในระหว่างวัน"""
     order = list(range(len(clients)))
@@ -148,7 +151,7 @@ def _generate_with_failover(prompt, image_bytes):
             return response
         except genai_errors.APIError as e:
             last_err = e
-            if e.code in (429, 503):  # quota exceeded / overloaded — try next key
+            if e.code in RETRYABLE_STATUS_CODES:  # quota / overload / deadline — try next key
                 logger.warning(f"⚠️ Key #{i + 1} failed ({e.code}), trying next key...")
                 continue
             raise  # other API errors (bad request, auth, etc.) — don't retry

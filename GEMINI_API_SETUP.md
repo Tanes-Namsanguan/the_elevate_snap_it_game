@@ -59,16 +59,24 @@ gunicorn จะฆ่า worker ทั้งตัวทิ้ง (`WORKER TIMEO
 วิธีแก้ 2 ชั้นที่ทำไว้:
 
 1. **`app.py`** — ตั้ง `GEMINI_REQUEST_TIMEOUT_MS` (ผ่าน `types.HttpOptions(timeout=...)`)
-   ให้แต่ละคีย์มี timeout ของตัวเอง (ปัจจุบัน 15 วินาที) ถ้าคีย์ไหนค้างเกินนี้
-   (`httpx.TimeoutException`/`httpx.ConnectError`) จะข้ามไปคีย์ถัดไปทันที เหมือนกรณี 429/503
-2. **`Procfile`** — ตั้ง gunicorn `--timeout 90 --workers 2 --threads 4 --worker-class gthread`
-   เผื่อเวลาไว้มากกว่า `จำนวนคีย์ × GEMINI_REQUEST_TIMEOUT_MS` และใช้ threaded worker
-   เพื่อให้ผู้เล่นคนอื่นเล่นต่อได้แม้มี 1 request กำลังรอ Gemini อยู่
+   ให้แต่ละคีย์มี timeout ของตัวเอง (ปัจจุบัน 25 วินาที — Gemini เองบางครั้งก็ตอบช้าจริงๆ
+   ระดับ 10-15 วิ ก่อนจะสำเร็จ ตั้งสั้นไปจะไปตัดจบ request ที่กำลังจะสำเร็จอยู่ดีๆ)
+   ถ้าคีย์ไหนค้างเกินนี้ (`httpx.TimeoutException`/`httpx.ConnectError`) หรือ Gemini ตอบ
+   กลับมาเป็น 429/503/**504 (DEADLINE_EXCEEDED)** จะข้ามไปคีย์ถัดไปทันที แทนที่จะโยน error
+   กลับไปที่ผู้เล่นเลย
+2. **`Procfile`** — ตั้ง gunicorn `--timeout 120 --workers 1 --threads 4 --worker-class gthread`
+   เผื่อเวลาไว้มากกว่า `จำนวนคีย์ × GEMINI_REQUEST_TIMEOUT_MS` และใช้ **threads** (ไม่ใช่หลาย
+   worker process) เพื่อให้ผู้เล่นคนอื่นเล่นต่อได้แม้มี 1 request กำลังรอ Gemini อยู่ โดยไม่เพิ่ม
+   หน่วยความจำเป็นเท่าตัวแบบการเพิ่ม `--workers` (แต่ละ worker process โหลดทั้งแอปซ้ำอีกชุด
+   รวม dependency ทั้งหมด เช่น `google-genai`, `google-api-python-client` ฯลฯ ซึ่งบน Render
+   free/starter plan ที่ RAM จำกัด การเพิ่ม worker process อาจทำให้ swap/throttle จนทุก
+   request ช้าลงทั้งระบบ ไม่ใช่แค่ request ที่ค้าง — ถ้าจะเพิ่ม concurrency ให้เพิ่ม `--threads`
+   ก่อนเสมอ แล้วค่อยพิจารณา `--workers` ถ้ามั่นใจว่า RAM เหลือพอ)
 
 > ⚠️ **Render ใช้ค่า Start Command ที่ตั้งไว้ใน Dashboard เป็นหลัก** ไม่ได้อ่านจาก
 > `Procfile` อัตโนมัติถ้ามีการตั้ง Start Command ไว้แล้ว ต้องไปที่ Render Dashboard →
 > service ของเกม → **Settings → Start Command** แล้วเปลี่ยนเป็น
-> `gunicorn app:app --timeout 90 --workers 2 --threads 4 --worker-class gthread` ด้วยตัวเอง
+> `gunicorn app:app --timeout 120 --workers 1 --threads 4 --worker-class gthread` ด้วยตัวเอง
 > (หรือลบ Start Command ทิ้งให้ Render ไปอ่านจาก `Procfile` แทน)
 
 ถ้าเปลี่ยน `GEMINI_REQUEST_TIMEOUT_MS` หรือจำนวนคีย์ในอนาคต ให้เช็คว่า
