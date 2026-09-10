@@ -1,11 +1,14 @@
 """
-check_gemini_keys.py — ทดสอบ Gemini API key ทุกตัวที่ตั้งไว้ใน environment variables
-ว่าใช้งานได้จริงหรือไม่ (ยิง request จริงแบบสั้นๆ ไปที่ Gemini ทีละคีย์)
+check_gemini_keys.py — ทดสอบ Gemini API key ทุกตัวที่ตั้งไว้ ว่าใช้งานได้จริงหรือไม่
+(ยิง request จริงแบบสั้นๆ ไปที่ Gemini ทีละคีย์)
 
 วิธีรัน:
-  - Local:  ตั้ง env var ก่อนแล้วรัน `python check_gemini_keys.py`
+  - Local:  วางไฟล์ `.env` ไว้ที่ root โปรเจกต์ (copy จาก `.env.example`) ใส่คีย์ไว้ที่
+            GEMINI_API_KEYS (หรือ GEMINI_API_KEY แบบคั่นด้วยจุลภาคก็ได้) แล้วรัน
+            `python check_gemini_keys.py` ตรงๆ ได้เลย ไม่ต้อง export env var เอง
   - Render: เปิด Shell ของ service (Dashboard > service > Shell) แล้วรัน
-            `python check_gemini_keys.py` ตรงนั้นเลย (จะได้ env var จริงที่ deploy ใช้อยู่)
+            `python check_gemini_keys.py` ตรงนั้นเลย (จะได้ env var จริงที่ deploy ใช้อยู่
+            — ไม่มีไฟล์ .env บน Render ก็ไม่เป็นไร สคริปต์จะข้ามการโหลด .env ไปเฉยๆ)
 
 อ่าน env var แบบเดียวกับ app.py ทุกประการ (GEMINI_API_KEYS / GEMINI_API_KEY_1..9 /
 GEMINI_API_KEY แบบคั่นด้วยจุลภาค) เพื่อให้ผลตรงกับที่แอปจริงใช้งาน
@@ -15,6 +18,13 @@ import sys
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")  # กัน UnicodeEncodeError บน Windows console (cp874/cp1252)
+
+from dotenv import load_dotenv
+
+# ต้องโหลด .env ก่อน import app เสมอ เพราะ app.py อ่าน env var ตอน import module เลย
+# (override=False คือถ้า env var ถูกตั้งไว้แล้วจริงๆ ในเครื่อง/Render จะใช้ค่านั้นก่อนเสมอ
+# .env มีไว้เป็นแค่ fallback สำหรับ local dev)
+load_dotenv(override=False)
 
 from google import genai
 from google.genai import errors as genai_errors
