@@ -377,6 +377,29 @@
       pointer-events: none;
     }
     #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── ADMIN RESET ICON (เล็กๆ กลางล่างจอ ไม่เด่น) ── */
+    .admin-reset-btn {
+      position: fixed;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 30px;
+      height: 30px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      opacity: .25;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .admin-reset-btn:active { opacity: .7; transform: translateX(-50%) scale(.9); }
   </style>
 </head>
 <body>
@@ -565,6 +588,9 @@
 <!-- TOAST -->
 <div id="toast"></div>
 
+<!-- ADMIN RESET (ซ่อนเนียนๆ ไว้ให้แอดมินกดปลดล็อกให้ผู้เล่นได้) -->
+<button id="admin-reset-btn" class="admin-reset-btn" onclick="adminReset()" title="admin">⚙️</button>
+
 <script>
   // ── CHALLENGES ──────────────────────────────────────────
   // แต่ละรอบดึงโจทย์แบบสุ่ม 1 อย่าง จาก "ลิสต์ของรอบนั้น" (รอบที่ 1 = ลิสต์ที่ 1, รอบที่ 2 = ลิสต์ที่ 2, รอบที่ 3 = ลิสต์ที่ 3)
@@ -633,6 +659,25 @@
     } catch (e) {
       // localStorage ไม่พร้อมใช้งาน (private mode ฯลฯ) — ปล่อยผ่าน ไม่ให้เกมพัง
     }
+  }
+
+  // ── ADMIN RESET (ให้แอดมินปลดล็อกให้เล่นใหม่ได้ กรณีกดพลาด/อยากแก้ตัว) ──
+  const ADMIN_PASSCODE = 'qwerty';
+
+  function adminReset() {
+    const pass = window.prompt('🔒 รหัสแอดมิน สำหรับปลดล็อกให้เล่นใหม่ได้:');
+    if (pass === null) return; // กด Cancel
+    if (pass !== ADMIN_PASSCODE) {
+      showToast('❌ รหัสไม่ถูกต้อง');
+      return;
+    }
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      // ignore
+    }
+    showToast('✅ ปลดล็อกสำเร็จ! กำลังเริ่มเกมใหม่...');
+    setTimeout(() => location.reload(), 700);
   }
 
   // ── STATE ────────────────────────────────────────────────
