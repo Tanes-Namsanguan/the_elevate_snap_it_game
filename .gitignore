@@ -3,3 +3,7 @@ __pycache__/
 .env
 venv/
 .venv/
+
+# Google service-account key files (credentials are passed via
+# GOOGLE_SHEETS_CREDENTIALS env var instead — never commit the JSON key)
+*.json

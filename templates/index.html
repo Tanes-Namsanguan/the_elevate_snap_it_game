@@ -453,7 +453,7 @@
     <div class="challenge-hint">
       <b>📋 กติกา</b>
       ⏱ เวลาจำกัด 2 นาที ถ่ายให้ครบ 3 ภาพ<br>
-      <span class="hint-punchline">🧮 ความไวเป็นเรื่องของปีศาจ !!</span>
+      <span class="hint-punchline">🧮 ความไวเป็นเรื่องของปีศาจ</span>
     </div>
     <div>
       <button class="btn btn-primary" onclick="startRound()">เริ่มภารกิจ ⚡</button>
@@ -671,6 +671,27 @@
     }
   }
 
+  // ── HISTORY LOG (ส่งไป Google Sheets ผ่าน backend) ──────────
+  // fire-and-forget เสมอ — ห้ามให้ error ตรงนี้กระทบ flow หลักของเกม
+  const PRIZE_KEY_TO_REWARD = { big: 'L', medium: 'M', small: 'S' };
+
+  function logGameResult(result) {
+    try {
+      fetch('/log-result', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_correct: result.correctCount,
+          time_left_sec: result.timeLeft,
+          total_score:   result.finalScore,
+          reward:         PRIZE_KEY_TO_REWARD[result.prize.key] || 'S',
+        }),
+      }).catch(() => { /* เงียบไว้ ไม่กระทบเกม */ });
+    } catch (e) {
+      // ignore
+    }
+  }
+
   // ── ADMIN RESET (ให้แอดมินปลดล็อกให้เล่นใหม่ได้ กรณีกดพลาด/อยากแก้ตัว) ──
   const ADMIN_PASSCODE = 'qwerty';
 
@@ -773,6 +794,7 @@
       rounds:       state.rounds,
     };
     saveTodayResult(state.finalResult);
+    logGameResult(state.finalResult);
 
     document.getElementById('btn-next-round').style.display     = 'none';
     document.getElementById('btn-back-home').style.display      = 'none';

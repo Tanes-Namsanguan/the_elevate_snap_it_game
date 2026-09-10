@@ -17,6 +17,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+import sheets_logger  # noqa: E402 (ต้อง import หลัง logging.basicConfig เพื่อให้ log ตอน init ใช้ format เดียวกัน)
+
 app = Flask(__name__)
 
 # ── QR CODE SETUP ─────────────────────────────────────────
@@ -201,6 +203,31 @@ Be fair — if the photo is close enough or partially matches, consider it corre
     except Exception as e:
         logger.error(f"❌ Unexpected error in /analyze: {type(e).__name__}: {e}")
         return jsonify({"error": f"{type(e).__name__}: {str(e)}"}), 500
+
+
+@app.route("/log-result", methods=["POST"])
+def log_result():
+    """บันทึกผลการเล่น 1 เกม (จบครบ 3 ภารกิจ หรือหมดเวลา) ลง Google Sheets เพื่อดูประวัติ
+    เป็นแค่ analytics เสริม ไม่ใช่ core flow ของเกม — ยิงแบบ fire-and-forget เสมอ
+    (คิวงานเข้า thread แยกใน sheets_logger) เพื่อไม่บล็อก response และไม่ทำให้เกมพังถ้า
+    Google Sheets ล่มหรือยังไม่ได้ตั้งค่า credentials"""
+    try:
+        data = request.get_json() or {}
+        image_correct = int(data.get("image_correct", 0))
+        time_left_sec = int(data.get("time_left_sec", 0))
+        total_score = int(data.get("total_score", 0))
+        reward = str(data.get("reward", ""))[:1].upper()
+
+        # อยู่หลัง proxy ของ Render — IP จริงของผู้เล่นมาจาก X-Forwarded-For ไม่ใช่ request.remote_addr
+        ip = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
+        user_agent = request.headers.get("User-Agent", "")
+
+        sheets_logger.log_game_result(image_correct, time_left_sec, total_score, reward, ip, user_agent)
+    except Exception as e:
+        # ไม่ให้ endpoint นี้ทำให้อะไรพัง — log ไว้เฉยๆ พอ
+        logger.error(f"❌ Failed to queue /log-result: {e}")
+
+    return jsonify({"status": "queued"})
 
 
 if __name__ == "__main__":
