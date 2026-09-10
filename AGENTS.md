@@ -7,6 +7,7 @@
 ## Deployment
 - Hosted on Render, deploys from the `main` branch.
 - Python version is pinned via `.python-version` (currently `3.13`) — don't remove this without checking that all pinned deps in `requirements.txt` ship prebuilt wheels for the target version (Render's default Python version can drift and break builds that rely on source builds, e.g. old `pillow`).
+- `Procfile` sets the gunicorn start command (`--timeout 90 --workers 2 --threads 4 --worker-class gthread`) so a slow/stuck Gemini call can't take down the whole worker (see "WORKER TIMEOUT" section in `GEMINI_API_SETUP.md`). Render only reads `Procfile` if no Start Command is set in the dashboard — check the dashboard's Settings → Start Command matches if worker timeouts show up in the logs again.
 
 ## App structure
 - `app.py` — Flask app (routes: `/`, `/health`, `/qrcode`, `/analyze`, `/log-result`).

@@ -4,6 +4,7 @@ import json
 import base64
 import random
 import logging
+import httpx
 import qrcode
 from google import genai
 from google.genai import errors as genai_errors
@@ -30,6 +31,13 @@ GAME_URL = os.environ.get("GAME_URL", "https://the-elevate-snap-it-game.onrender
 #   2) GEMINI_API_KEY_1 / GEMINI_API_KEY_2 / GEMINI_API_KEY_3 (แยกตัวแปร)
 # ยังรองรับ GEMINI_API_KEY ตัวเดียวแบบเดิมด้วย (backward compatible)
 MODEL = "gemini-3.5-flash-lite"
+
+# กันไม่ให้ 1 request ที่ Gemini ตอบช้า/ค้าง ไปฉุด gunicorn worker จน hit WORKER TIMEOUT
+# (ค่า default ของ gunicorn คือ 30s — ถ้า Gemini ค้างนานกว่านั้น worker ทั้งตัวจะโดน
+# SIGKILL กลางคัน ทำให้ request อื่นๆ ที่รออยู่ในคิวพังไปด้วย) แทนที่จะรอจนถูกฆ่า
+# เราตัดจบเองก่อนที่ระดับ HTTP client แล้วลองคีย์ถัดไปแทน
+GEMINI_REQUEST_TIMEOUT_MS = 15_000  # 15 วินาทีต่อ 1 คีย์ — ถ้าเปลี่ยนค่านี้ ให้ปรับ
+# gunicorn --timeout ให้เผื่อไว้มากกว่า (จำนวนคีย์ทั้งหมด × ค่านี้) ด้วย ดู GEMINI_API_SETUP.md
 
 
 def _split_keys(raw):
@@ -117,9 +125,9 @@ def qrcode_image():
 
 def _generate_with_failover(prompt, image_bytes):
     """สุ่มลำดับ client (API key) แล้วลองยิงไปเรื่อยๆ — ถ้าคีย์ไหนโดน rate-limit/quota
-    เต็ม (429) หรือ Gemini ล้ม (503) ก็ข้ามไปลองคีย์ถัดไปให้อัตโนมัติ วิธีนี้กระจาย
-    โหลดข้าม process ของ gunicorn ได้โดยไม่ต้องมี shared state (เช่น Redis) และไม่มี
-    downtime ถ้าคีย์ใดคีย์หนึ่งใช้โควต้าฟรีหมดในระหว่างวัน"""
+    เต็ม (429), Gemini ล้ม (503), หรือค้าง/ตอบช้าเกิน GEMINI_REQUEST_TIMEOUT_MS ก็ข้าม
+    ไปลองคีย์ถัดไปให้อัตโนมัติ วิธีนี้กระจายโหลดข้าม process ของ gunicorn ได้โดยไม่ต้องมี
+    shared state (เช่น Redis) และไม่มี downtime ถ้าคีย์ใดคีย์หนึ่งใช้โควต้าฟรีหมดในระหว่างวัน"""
     order = list(range(len(clients)))
     random.shuffle(order)
 
@@ -132,6 +140,9 @@ def _generate_with_failover(prompt, image_bytes):
                     types.Part.from_text(text=prompt),
                     types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
                 ],
+                config=types.GenerateContentConfig(
+                    http_options=types.HttpOptions(timeout=GEMINI_REQUEST_TIMEOUT_MS),
+                ),
             )
             logger.info(f"🔑 Used Gemini API key #{i + 1}/{len(clients)}")
             return response
@@ -141,6 +152,10 @@ def _generate_with_failover(prompt, image_bytes):
                 logger.warning(f"⚠️ Key #{i + 1} failed ({e.code}), trying next key...")
                 continue
             raise  # other API errors (bad request, auth, etc.) — don't retry
+        except (httpx.TimeoutException, httpx.ConnectError) as e:
+            last_err = e
+            logger.warning(f"⚠️ Key #{i + 1} timed out/unreachable ({e}), trying next key...")
+            continue
 
     raise last_err if last_err else RuntimeError("No Gemini API keys available")
 

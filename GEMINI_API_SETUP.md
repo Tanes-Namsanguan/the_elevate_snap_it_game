@@ -48,3 +48,28 @@ GEMINI_API_KEY_3=AIzaXXXXXXXXXXXX3
 ส่วนที่สำคัญกว่าความสม่ำเสมอ 100% คือ **fallback อัตโนมัติเมื่อคีย์ใดคีย์หนึ่งโควต้าหมด** — ซึ่งวิธี round-robin เพียวๆ ไม่มีให้ ถ้าไม่เพิ่ม logic แยก แต่การสุ่ม+fallback ที่ทำไว้ให้แล้วคือจุดที่ทำให้เกมไม่ล่มกลางวันแม้คีย์ใดคีย์หนึ่งจะโควต้าเต็มก่อนก็ตาม
 
 **สรุป:** ใช้ 3 คีย์ (ฟรี 1,000 ครั้ง/คีย์/วัน) รวมได้สูงสุด ~3,000 ครั้ง/วัน โดยระบบสุ่มเลือกคีย์ + ข้ามไปคีย์ที่ยังมีโควต้าให้อัตโนมัติ ไม่ต้องทำอะไรเพิ่มเวลาใช้งานจริง
+
+## 4) กันไม่ให้ Gemini ตอบช้าไปฉุด gunicorn worker ตาย (WORKER TIMEOUT)
+
+ถ้า Gemini ตอบช้าผิดปกติ (เช่นเน็ตหลุด/API ค้าง) request จะไปค้างอยู่ที่ HTTP client
+เฉยๆ โดยไม่มีอะไร error กลับมา — ถ้าค้างนานกว่าเวลาที่ gunicorn ตั้งไว้ (default 30s)
+gunicorn จะฆ่า worker ทั้งตัวทิ้ง (`WORKER TIMEOUT` → `SIGKILL`) ทำให้ request อื่นที่
+กำลังใช้ worker เดียวกันอยู่พังไปด้วย ไม่ใช่แค่ request ที่ค้าง
+
+วิธีแก้ 2 ชั้นที่ทำไว้:
+
+1. **`app.py`** — ตั้ง `GEMINI_REQUEST_TIMEOUT_MS` (ผ่าน `types.HttpOptions(timeout=...)`)
+   ให้แต่ละคีย์มี timeout ของตัวเอง (ปัจจุบัน 15 วินาที) ถ้าคีย์ไหนค้างเกินนี้
+   (`httpx.TimeoutException`/`httpx.ConnectError`) จะข้ามไปคีย์ถัดไปทันที เหมือนกรณี 429/503
+2. **`Procfile`** — ตั้ง gunicorn `--timeout 90 --workers 2 --threads 4 --worker-class gthread`
+   เผื่อเวลาไว้มากกว่า `จำนวนคีย์ × GEMINI_REQUEST_TIMEOUT_MS` และใช้ threaded worker
+   เพื่อให้ผู้เล่นคนอื่นเล่นต่อได้แม้มี 1 request กำลังรอ Gemini อยู่
+
+> ⚠️ **Render ใช้ค่า Start Command ที่ตั้งไว้ใน Dashboard เป็นหลัก** ไม่ได้อ่านจาก
+> `Procfile` อัตโนมัติถ้ามีการตั้ง Start Command ไว้แล้ว ต้องไปที่ Render Dashboard →
+> service ของเกม → **Settings → Start Command** แล้วเปลี่ยนเป็น
+> `gunicorn app:app --timeout 90 --workers 2 --threads 4 --worker-class gthread` ด้วยตัวเอง
+> (หรือลบ Start Command ทิ้งให้ Render ไปอ่านจาก `Procfile` แทน)
+
+ถ้าเปลี่ยน `GEMINI_REQUEST_TIMEOUT_MS` หรือจำนวนคีย์ในอนาคต ให้เช็คว่า
+`(จำนวนคีย์ทั้งหมด × GEMINI_REQUEST_TIMEOUT_MS)` ยังน้อยกว่า gunicorn `--timeout` อยู่เสมอ
