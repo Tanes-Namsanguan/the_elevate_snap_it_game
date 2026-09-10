@@ -762,18 +762,33 @@
     });
   }
 
+  function tickTimer() {
+    state.timeLeft--;
+    updateTimerDisplay();
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+      handleTimeout();
+    }
+  }
+
   function startTimer() {
     clearInterval(state.timerInterval);
     state.timeLeft = TOTAL_TIME;
     updateTimerDisplay();
-    state.timerInterval = setInterval(() => {
-      state.timeLeft--;
-      updateTimerDisplay();
-      if (state.timeLeft <= 0) {
-        clearInterval(state.timerInterval);
-        handleTimeout();
-      }
-    }, 1000);
+    state.timerInterval = setInterval(tickTimer, 1000);
+  }
+
+  // หยุดนับเวลาชั่วคราวระหว่างรอ AI ตัดสิน (กันไม่ให้ AI ตอบช้าไปกินเวลาเล่นของผู้เล่น)
+  function pauseTimer() {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+
+  // นับเวลาต่อจากที่ค้างไว้ (ไม่รีเซ็ต) หลัง AI ตัดสินเสร็จ
+  function resumeTimer() {
+    if (state.gameEnded || state.timerInterval) return;
+    state.timerInterval = setInterval(tickTimer, 1000);
   }
 
   // ── GAME OVER HANDLING ───────────────────────────────────
@@ -957,6 +972,7 @@
   async function submitPhoto() {
     if (!state.capturedB64 || state.gameEnded) return;
     showScreen('s-loading');
+    pauseTimer(); // หยุดนาฬิกาไว้ระหว่างรอ AI ตัดสิน — ไม่ว่าจะช้าหรือไวก็ไม่กินเวลาเล่น
 
     try {
       const res = await fetch('/analyze', {
@@ -973,7 +989,7 @@
       const data = await res.json();
 
       if (data.error) throw new Error(data.error);
-      if (state.gameEnded) return; // หมดเวลาไปแล้วระหว่างรอ AI ตัดสิน
+      if (state.gameEnded) return; // จบเกมไปแล้วระหว่างรอ AI ตัดสิน (เช่นกดแอดมินรีเซ็ต)
 
       // บันทึกผลของรอบนี้ไว้ทำหน้าสรุป — AI บอกว่าถูก = +1 ภาพที่ถูก
       state.rounds.push({ th: state.current.th, emoji: state.current.emoji, correct: !!data.correct });
@@ -994,11 +1010,16 @@
 
       updateResultScoreBar();
 
-      if (state.round >= TOTAL_ROUNDS) finishGame();
+      if (state.round >= TOTAL_ROUNDS) {
+        finishGame(); // จบเกมแล้ว ไม่ต้องนับเวลาต่อ
+      } else {
+        resumeTimer(); // นับเวลาต่อจากที่ค้างไว้
+      }
 
       showScreen('s-result');
 
     } catch (err) {
+      resumeTimer(); // ยังไม่จบรอบ ต้องนับเวลาต่อแม้ AI ตัดสินไม่สำเร็จ
       showToast('เกิดข้อผิดพลาด: ' + err.message + ' — ลองใหม่อีกครั้ง');
       showScreen('s-preview');
     }
