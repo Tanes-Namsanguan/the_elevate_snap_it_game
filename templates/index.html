@@ -475,7 +475,6 @@
     <div style="flex:1"></div>
     <div>
       <button class="btn btn-primary" onclick="openCamera()">📷 เปิดกล้อง</button>
-      <button class="btn btn-outline" onclick="goHome()">← กลับหน้าหลัก</button>
     </div>
   </div>
 
@@ -555,7 +554,6 @@
     <div class="game-over-note" id="res-game-over-note" style="display:none;">🏁 จบเกมแล้ว! กดปุ่มด้านล่างเพื่อดูผลสรุปและรางวัลของคุณ</div>
     <button class="btn btn-primary" id="btn-next-round" onclick="startRound()">ภารกิจต่อไป →</button>
     <button class="btn btn-primary" id="btn-view-summary" style="display:none;" onclick="showFinalSummary()">ดูผลสรุป 🏁</button>
-    <button class="btn btn-outline" id="btn-back-home" onclick="goHome()">← หน้าหลัก</button>
     <div class="result-box">
       <div class="result-box-label">AI เห็นว่า</div>
       <div class="result-box-text" id="res-found">—</div>
@@ -812,7 +810,6 @@
     logGameResult(state.finalResult);
 
     document.getElementById('btn-next-round').style.display     = 'none';
-    document.getElementById('btn-back-home').style.display      = 'none';
     document.getElementById('btn-view-summary').style.display   = 'block';
     document.getElementById('res-game-over-note').style.display = 'block';
     document.getElementById('res-game-over-note').textContent   = '🏁 จบเกมแล้ว! กดปุ่มด้านล่างเพื่อดูผลสรุปและรางวัลของคุณ';
@@ -881,12 +878,6 @@
 
   function showFinalSummary() {
     if (state.finalResult) displaySummary(state.finalResult);
-  }
-
-  // ── NAVIGATION ────────────────────────────────────────────
-  function goHome() {
-    if (state.gameEnded) { showFinalSummary(); return; }
-    showScreen('s-start');
   }
 
   // ── ROUND SETUP ───────────────────────────────────────────
