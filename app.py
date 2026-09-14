@@ -196,7 +196,11 @@ Respond ONLY with a JSON object, no markdown, no extra text:
   "found": "what you see in the image (1 short sentence in Thai)",
   "feedback": "fun encouraging message in Thai, 1-2 sentences, casual tone, use emoji"
 }}
-Be fair — if the photo is close enough or partially matches, consider it correct."""
+Be fair — if the photo is close enough or partially matches, consider it correct.
+EXCEPTION: if the challenge description above explicitly requires exact wording/spelling
+(e.g. it must say a specific word precisely and rejects similar-looking alternatives),
+follow that requirement strictly and do NOT apply leniency for that part — read any
+visible text carefully and only mark it correct if it matches exactly as required."""
 
         image_bytes = base64.b64decode(image_b64)
         logger.info(f"🔄 Sending to Gemini ({len(image_bytes)} bytes)...")
