@@ -297,22 +297,23 @@
       text-align: center;
       padding: 20px 0 8px;
     }
-    .result-icon { font-size: 72px; margin-bottom: 8px; }
-    .prize-code {
-      display: inline-flex;
+    .result-icon {
+      font-size: 72px;
+      margin-bottom: 8px;
+      display: flex;
       align-items: center;
       justify-content: center;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: var(--card);
-      border: 2px solid var(--border);
-      color: var(--text);
-      font-size: 15px;
-      font-weight: 800;
-      vertical-align: middle;
-      margin-left: 8px;
+      gap: 14px;
     }
+    .prize-code {
+      font-size: 72px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    /* โทนสีตามธีมเหรียญรางวัล — ใหญ่=ทอง, กลาง=เงิน, เล็ก=ทองแดง */
+    .prize-code.code-big    { color: #ffd54a; text-shadow: 0 0 18px rgba(255,213,74,.55); }
+    .prize-code.code-medium { color: #d6dee8; text-shadow: 0 0 14px rgba(214,222,232,.4); }
+    .prize-code.code-small  { color: #d78a4d; text-shadow: 0 0 12px rgba(215,138,77,.4);  }
     .result-badge {
       display: inline-block;
       border-radius: 20px;
@@ -322,9 +323,9 @@
     }
     .result-badge.correct  { background: #14532d; color: var(--success); }
     .result-badge.wrong    { background: #450a0a; color: var(--danger);  }
-    .result-badge.prize-big    { background: #14532d; color: var(--success); }
-    .result-badge.prize-medium { background: #422006; color: var(--gold);    }
-    .result-badge.prize-small  { background: #1e3a8a; color: #60a5fa;       }
+    .result-badge.prize-big    { background: rgba(255,213,74,.14);  color: #ffd54a; }
+    .result-badge.prize-medium { background: rgba(214,222,232,.14); color: #d6dee8; }
+    .result-badge.prize-small  { background: rgba(215,138,77,.14);  color: #d78a4d; }
 
     .result-box {
       background: #0a1628;
@@ -583,7 +584,7 @@
     </div>
     <div class="result-verdict">
       <div class="result-icon">
-        <span id="sum-prize-emoji">🏆</span><span class="prize-code" id="sum-prize-code">L</span>
+        <span id="sum-prize-emoji">🏆</span><span class="prize-code code-big" id="sum-prize-code">L</span>
       </div>
       <div class="result-badge prize-big" id="sum-prize-badge">รางวัลใหญ่</div>
     </div>
@@ -641,7 +642,7 @@
       { th: "นาฬิกา",   en: "watch or clock",             emoji: "⌚", hint: "💡 นาฬิกาข้อมือ นาฬิกาแขวน หรือนาฬิกาในมือถือ" },
       { th: "ลูกโป่ง",  en: "a balloon (a real one, or a photo/picture of one is fine too)", emoji: "🎈", hint: "💡 ลูกโป่งของจริงหรือรูปลูกโป่งก็ได้" },
       { th: "ปากกา",    en: "pen",                        emoji: "🖊️", hint: "💡 หาปากกาอะไรก็ได้รอบตัว" },
-      { th: "สมุด",      en: "notebook",                   emoji: "📓", hint: "💡 สมุดจด หรือสมุดเล่มไหนก็ได้" },
+      // { th: "สมุด",      en: "notebook",                   emoji: "📓", hint: "💡 สมุดจด หรือสมุดเล่มไหนก็ได้" },
       { th: "กระเป๋า",   en: "any kind of bag — handbag, purse, shoulder bag, or backpack", emoji: "👜", hint: "💡 กระเป๋าถือ กระเป๋าสะพาย หรือกระเป๋าเป้" },
       { th: "รองเท้า",   en: "shoes or sneakers",          emoji: "👟", hint: "💡 รองเท้าของตัวเองหรือคนข้างๆ ก็ได้" },
       { th: "ภาชนะใส่น้ำ", en: "any container that holds water or a drink — a water bottle, cup, glass, tumbler, or mug all count", emoji: "🧴", hint: "💡 ขวดน้ำ แก้วน้ำ หรือภาชนะใส่น้ำอะไรก็ได้" },
@@ -870,7 +871,10 @@
   // ── SUMMARY SCREEN ────────────────────────────────────────
   function displaySummary(data) {
     document.getElementById('sum-prize-emoji').textContent = data.prize.emoji;
-    document.getElementById('sum-prize-code').textContent  = data.prize.code;
+    const codeEl = document.getElementById('sum-prize-code');
+    codeEl.textContent = data.prize.code;
+    codeEl.className   = 'prize-code code-' + data.prize.key;
+
     const badge = document.getElementById('sum-prize-badge');
     badge.textContent = data.prize.label;
     badge.className   = 'result-badge prize-' + data.prize.key;
