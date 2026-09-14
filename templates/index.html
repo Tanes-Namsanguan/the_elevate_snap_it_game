@@ -298,6 +298,21 @@
       padding: 20px 0 8px;
     }
     .result-icon { font-size: 72px; margin-bottom: 8px; }
+    .prize-code {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 2px solid var(--border);
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 800;
+      vertical-align: middle;
+      margin-left: 8px;
+    }
     .result-badge {
       display: inline-block;
       border-radius: 20px;
@@ -567,7 +582,9 @@
       <div class="brand-title">สรุปผลเกม SNAP IT!</div>
     </div>
     <div class="result-verdict">
-      <div class="result-icon" id="sum-prize-emoji">🏆</div>
+      <div class="result-icon">
+        <span id="sum-prize-emoji">🏆</span><span class="prize-code" id="sum-prize-code">L</span>
+      </div>
       <div class="result-badge prize-big" id="sum-prize-badge">รางวัลใหญ่</div>
     </div>
     <div class="score-bar">
@@ -606,7 +623,7 @@
     // รอบที่ 1
     [
       { th: "ถ่ายภาพคู่",   en: "two people posing together in one photo (a couple / duo shot)", emoji: "👫", hint: "💡 ชวนเพื่อนหรือคนข้างๆ มาถ่ายรูปคู่กัน" },
-      { th: "ตุ๊กตา",       en: "a doll or stuffed toy",                                          emoji: "🧸", hint: "💡 หาตุ๊กตาหรือของเล่นตุ๊กตารอบตัว" },
+      // { th: "ตุ๊กตา",       en: "a doll or stuffed toy",                                          emoji: "🧸", hint: "💡 หาตุ๊กตาหรือของเล่นตุ๊กตารอบตัว" },
       { th: "ของห้อยกระเป๋า",  en: "a keychain or charm accessory — attached to a bag, or just held/shown by itself",  emoji: "🎒", hint: "💡 มองหาพวงกุญแจหรือของห้อยกระเป๋า" },
       { th: "คำว่า THE ELEVATORS", en: "a sign, booth, shirt, or any text that clearly shows the exact word \"THE ELEVATORS\" spelled precisely that way — it must say \"ELEVATORS\", NOT \"ELEVATE\" or \"THE ELEVATE\" or any other spelling; reject it if the word is misspelled or different", emoji: "🏷️", hint: "💡 หาป้าย บูธ เสื้อ หรือข้อความที่มีคำว่า THE ELEVATORS (สะกดตรงตัวเป๊ะๆ เท่านั้น)" },
     ],
@@ -640,9 +657,9 @@
   // ── PRIZE TIERS ────────────────────────────────────────────
   // คะแนน = เวลาที่เหลือ (วินาที) × จำนวนภาพที่ถูก
   function getPrizeTier(score) {
-    if (score >= 180) return { key: 'big',    label: 'รางวัลใหญ่', emoji: '🏆' };
-    if (score >= 90)  return { key: 'medium', label: 'รางวัลกลาง', emoji: '🥈' };
-    return              { key: 'small',  label: 'รางวัลเล็ก',  emoji: '🎁' };
+    if (score >= 225) return { key: 'big',    label: 'รางวัลใหญ่', emoji: '🏆', code: 'L' };
+    if (score >= 90)  return { key: 'medium', label: 'รางวัลกลาง', emoji: '🥈', code: 'M' };
+    return              { key: 'small',  label: 'รางวัลเล็ก',  emoji: '🎁', code: 'S' };
   }
 
   // ── DAILY PLAY LOCK (localStorage) ─────────────────────────
@@ -672,8 +689,6 @@
 
   // ── HISTORY LOG (ส่งไป Google Sheets ผ่าน backend) ──────────
   // fire-and-forget เสมอ — ห้ามให้ error ตรงนี้กระทบ flow หลักของเกม
-  const PRIZE_KEY_TO_REWARD = { big: 'L', medium: 'M', small: 'S' };
-
   function logGameResult(result) {
     try {
       fetch('/log-result', {
@@ -683,7 +698,7 @@
           image_correct: result.correctCount,
           time_left_sec: result.timeLeft,
           total_score:   result.finalScore,
-          reward:         PRIZE_KEY_TO_REWARD[result.prize.key] || 'S',
+          reward:         result.prize.code || 'S',
         }),
       }).catch(() => { /* เงียบไว้ ไม่กระทบเกม */ });
     } catch (e) {
@@ -855,6 +870,7 @@
   // ── SUMMARY SCREEN ────────────────────────────────────────
   function displaySummary(data) {
     document.getElementById('sum-prize-emoji').textContent = data.prize.emoji;
+    document.getElementById('sum-prize-code').textContent  = data.prize.code;
     const badge = document.getElementById('sum-prize-badge');
     badge.textContent = data.prize.label;
     badge.className   = 'result-badge prize-' + data.prize.key;
