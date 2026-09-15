@@ -658,7 +658,7 @@
   // ── PRIZE TIERS ────────────────────────────────────────────
   // คะแนน = เวลาที่เหลือ (วินาที) × จำนวนภาพที่ถูก
   function getPrizeTier(score) {
-    if (score >= 225) return { key: 'big',    label: 'รางวัลใหญ่', emoji: '🏆', code: 'L' };
+    if (score >= 180) return { key: 'big',    label: 'รางวัลใหญ่', emoji: '🏆', code: 'L' };
     if (score >= 90)  return { key: 'medium', label: 'รางวัลกลาง', emoji: '🥈', code: 'M' };
     return              { key: 'small',  label: 'รางวัลเล็ก',  emoji: '🎁', code: 'S' };
   }
