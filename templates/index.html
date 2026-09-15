@@ -657,10 +657,10 @@
 
   // ── PRIZE TIERS ────────────────────────────────────────────
   // คะแนน = เวลาที่เหลือ (วินาที) × จำนวนภาพที่ถูก
-  function getPrizeTier(score, timeLeft) {
-    if (score >= 225 || timeLeft >= 70) return { key: 'big',    label: 'รางวัลใหญ่', emoji: '🏆', code: 'L' };
-    if (score >= 90)                    return { key: 'medium', label: 'รางวัลกลาง', emoji: '🥈', code: 'M' };
-    return                                     { key: 'small',  label: 'รางวัลเล็ก',  emoji: '🎁', code: 'S' };
+  function getPrizeTier(score) {
+    if (score >= 225) return { key: 'big',    label: 'รางวัลใหญ่', emoji: '🏆', code: 'L' };
+    if (score >= 90)  return { key: 'medium', label: 'รางวัลกลาง', emoji: '🥈', code: 'M' };
+    return              { key: 'small',  label: 'รางวัลเล็ก',  emoji: '🎁', code: 'S' };
   }
 
   // ── DAILY PLAY LOCK (localStorage) ─────────────────────────
@@ -820,7 +820,7 @@
       totalRounds:  TOTAL_ROUNDS,
       timeLeft:     state.timeLeft,
       finalScore:   finalScore,
-      prize:        getPrizeTier(finalScore, state.timeLeft),
+      prize:        getPrizeTier(finalScore),
       rounds:       state.rounds,
     };
     saveTodayResult(state.finalResult);
